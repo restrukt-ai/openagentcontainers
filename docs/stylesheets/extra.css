@@ -150,7 +150,7 @@ body {
 
 .md-header__button.md-logo img,
 .md-header__button.md-logo svg {
-  filter: invert(1);
+  filter: none;
 }
 
 /* Header buttons (hamburger, search icon) — black on white header */

@@ -7,14 +7,8 @@ Specification for the Open Agent Containers (OAC) standard.
 This directory is a [MkDocs](https://www.mkdocs.org) project. To serve locally:
 
 ```sh
-task install
-task serve
-```
-
-To build the static site:
-
-```sh
-task build
+pip install -r requirements.txt
+mkdocs serve
 ```
 
 The documentation covers the OAC label schema — how to annotate a Docker image so that a compliant
