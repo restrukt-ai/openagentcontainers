@@ -1,0 +1,28 @@
+site_name: Open Agent Containers
+site_description: Specification for the Open Agent Containers standard
+docs_dir: docs
+
+theme:
+  name: material
+  custom_dir: overrides
+  favicon: assets/favicon.svg
+  logo: assets/favicon.svg
+  palette:
+    scheme: default
+  font:
+    text: IBM Plex Sans
+    code: IBM Plex Mono
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - toc.integrate
+    - navigation.footer
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Overview: index.md
+  - Architecture: architecture.md
+  - Label reference: reference.md

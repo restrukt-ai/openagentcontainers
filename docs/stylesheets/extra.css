@@ -1,0 +1,604 @@
+/* ============================================================
+   Open Agent Containers — Docs Theme
+   Design language: Dense. Explicit. Flat. Engineered.
+   Inspired by U.S. Graphics Company (usgraphics.com)
+   ============================================================ */
+
+/* --- Palette -------------------------------------------- */
+
+:root {
+  --oac-black:         #000000;
+  --oac-white:         #ffffff;
+  --oac-page-bg:       #eeeeee;
+  --oac-border:        #888888;
+  --oac-border-light:  #bfbfbf;
+  --oac-shadow:        #bbbbbb;
+  --oac-green:         #1a5c1a;
+  --oac-code-bg:       #fff9d6;
+  --oac-pre-bg:        #f4f4f0;
+  --oac-size:          14px;
+  --oac-line:          1.5;
+}
+
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color:              #000000;
+  --md-primary-fg-color--light:       #444444;
+  --md-primary-fg-color--dark:        #000000;
+  --md-primary-bg-color:              #ffffff;
+  --md-primary-bg-color--light:       #eeeeee;
+
+  --md-accent-fg-color:               var(--oac-green);
+  --md-accent-fg-color--transparent:  rgba(26, 92, 26, 0.1);
+  --md-accent-bg-color:               #ffffff;
+
+  --md-default-fg-color:              #000000;
+  --md-default-fg-color--light:       hsla(0, 0%, 0%, 0.54);
+  --md-default-fg-color--lighter:     hsla(0, 0%, 0%, 0.32);
+  --md-default-fg-color--lightest:    hsla(0, 0%, 0%, 0.12);
+  --md-default-bg-color:              #ffffff;
+  --md-default-bg-color--light:       #f8f8f8;
+  --md-default-bg-color--lighter:     #f2f2f2;
+  --md-default-bg-color--lightest:    #eeeeee;
+
+  --md-typeset-color:                 #000000;
+  --md-typeset-a-color:               #000000;
+
+  --md-code-fg-color:                 #000000;
+  --md-code-bg-color:                 var(--oac-code-bg);
+
+  --md-shadow-z1:  1px 1px 0 var(--oac-shadow);
+  --md-shadow-z2:  2px 2px 0 var(--oac-shadow);
+  --md-shadow-z3:  2px 2px 0 var(--oac-shadow);
+}
+
+/* --- Page background ------------------------------------ */
+
+body {
+  background-color: var(--oac-page-bg);
+}
+
+/* --- Typography ----------------------------------------- */
+
+.md-typeset {
+  font-size: var(--oac-size);
+  line-height: var(--oac-line);
+  color: var(--oac-black);
+}
+
+/* Flat heading hierarchy — utility over decoration */
+.md-typeset h1 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--oac-black);
+  letter-spacing: 0;
+  border-bottom: 1px dotted var(--oac-border);
+  padding-bottom: 0.3em;
+  margin-bottom: 0.75em;
+}
+
+.md-typeset h2 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--oac-black);
+  margin-top: 2em;
+  margin-bottom: 0.4em;
+  border-bottom: 1px dotted var(--oac-border-light);
+  padding-bottom: 0.2em;
+}
+
+.md-typeset h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--oac-black);
+  margin-top: 1.25em;
+  margin-bottom: 0.3em;
+}
+
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--oac-black);
+}
+
+/* Links — black by default, green on hover */
+.md-typeset a {
+  color: var(--oac-black);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.md-typeset a:hover,
+.md-typeset a:focus {
+  color: var(--oac-green);
+}
+
+/* Horizontal rules — dotted */
+.md-typeset hr {
+  border: none;
+  border-top: 1px dotted var(--oac-border);
+  margin: 1.5em 0;
+}
+
+/* Blockquotes — plain left-rule, no italics */
+.md-typeset blockquote {
+  border-left: 3px solid var(--oac-border-light);
+  color: var(--oac-black);
+  font-style: normal;
+  padding-left: 0.75rem;
+  margin-left: 0;
+}
+
+/* --- Header --------------------------------------------- */
+
+.md-header {
+  background-color: var(--oac-white);
+  color: var(--oac-black);
+  border-bottom: 1px solid var(--oac-border);
+  box-shadow: none;
+}
+
+.md-header__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--oac-black);
+  max-width: 12rem;
+  margin-left: 8px !important;
+}
+
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  filter: invert(1);
+}
+
+/* Header buttons (hamburger, search icon) — black on white header */
+.md-header__button {
+  color: var(--oac-black);
+}
+
+/* Search — align right edge with content card */
+.md-search {
+  margin-right: 6px;
+}
+
+/* Search — styled to match header tab buttons */
+.md-search__form {
+  height: 1.5rem !important;
+  background-color: var(--oac-white) !important;
+  border: 1px solid var(--oac-black) !important;
+  border-radius: 0 !important;
+  box-shadow: 2px 2px 0 var(--oac-shadow) !important;
+}
+
+.md-search__form:hover,
+.md-search__form:focus-within {
+  background-color: var(--oac-white) !important;
+  box-shadow: 2px 2px 0 var(--oac-shadow) !important;
+}
+
+.md-search__input {
+  border: none !important;
+  border-radius: 0;
+  background-color: transparent !important;
+  color: var(--oac-black);
+  font-size: 0.78rem;
+  height: 100% !important;
+}
+
+.md-search__input::placeholder {
+  color: var(--oac-border);
+}
+
+.md-search__icon {
+  color: var(--oac-black) !important;
+}
+
+label.md-search__icon.md-icon {
+  top: 50% !important;
+  transform: translateY(-50%);
+  width: 18px !important;
+  height: 18px !important;
+}
+
+label.md-search__icon.md-icon svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.md-search__options {
+  color: var(--oac-black);
+}
+
+/* --- Navigation tabs (inline in header) ----------------- */
+
+/* Hide the standalone tab bar — tabs are rendered in the header instead */
+.md-tabs {
+  display: none;
+}
+
+/* Inline tab nav inside the header — btn-classic style, free-floating */
+.md-header-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0 0.75rem;
+  flex: 1;
+}
+
+.md-header-tabs__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 0.78rem;
+  color: var(--oac-black);
+  text-decoration: none;
+  padding: 0.15rem 0.55rem;
+  background: var(--oac-white);
+  border: 1px solid var(--oac-black);
+  box-shadow: 2px 2px 0 var(--oac-shadow);
+  line-height: 1.4;
+  transition: none;
+}
+
+/* Active tab — filled black, matches secondary nav active style */
+.md-header-tabs__link--active {
+  background: var(--oac-black);
+  color: var(--oac-white);
+  box-shadow: none;
+}
+
+.md-header-tabs__link:hover {
+  background: var(--oac-black);
+  color: var(--oac-white);
+  box-shadow: none;
+}
+
+/* --- Sidebar / nav -------------------------------------- */
+
+.md-sidebar {
+}
+
+.md-nav__title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--oac-black);
+  padding: 0.4rem 0.6rem;
+  background: var(--oac-white);
+  box-shadow: none !important;
+}
+
+/* TOC header: active page title — bordered label, no shadow, stronger border */
+.md-nav--lifted > .md-nav__list > .md-nav__item--active > label.md-nav__link {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border: 2px solid var(--oac-black) !important;
+  background: var(--oac-white);
+  box-shadow: none !important;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--oac-black) !important;
+}
+
+/* Hide the duplicate <a> link — we're already on this page */
+.md-nav--lifted > .md-nav__list > .md-nav__item--active > a.md-nav__link {
+  display: none !important;
+}
+
+/* No green dot on the TOC header label */
+.md-nav--lifted > .md-nav__list > .md-nav__item--active > label.md-nav__link::before {
+  content: none !important;
+}
+
+.md-nav__link {
+  font-size: 0.8rem;
+  color: var(--oac-black);
+  padding: 0.2rem 0.6rem;
+  transition: none;
+}
+
+.md-nav__link:hover {
+  color: var(--oac-green);
+}
+
+.md-nav__link--active {
+  color: var(--oac-green) !important;
+  font-weight: 700;
+}
+
+/* --- Content area --------------------------------------- */
+
+/* The "document in a frame" look */
+.md-content__inner {
+  border: 1px solid var(--oac-border);
+  box-shadow: 2px 2px 0 var(--oac-shadow);
+  padding: 1.25rem 1.75rem 1.5rem;
+  background: var(--oac-white);
+  margin: 1rem 0.5rem;
+}
+
+/* --- Tables --------------------------------------------- */
+
+.md-typeset table:not([class]) {
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  width: 100%;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.md-typeset table:not([class]) thead tr {
+  background-color: transparent;
+  border-bottom: 1px solid var(--oac-border);
+}
+
+.md-typeset table:not([class]) th {
+  background-color: transparent;
+  font-weight: 700;
+  font-size: 0.8rem;
+  border: 1px solid var(--oac-border-light);
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+  color: var(--oac-black);
+}
+
+.md-typeset table:not([class]) td {
+  border: 1px solid var(--oac-border-light);
+  padding: 0.25rem 0.5rem;
+  vertical-align: top;
+}
+
+
+/* Zebra stripe — very subtle */
+.md-typeset table:not([class]) tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+/* --- Code ----------------------------------------------- */
+
+/* Inline code — SKU badge treatment */
+.md-typeset code {
+  background-color: var(--oac-code-bg);
+  border: 1px dotted var(--oac-black);
+  border-radius: 0;
+  padding: 0.05em 0.3em;
+  font-size: 13px;
+  color: var(--oac-black);
+  letter-spacing: 0.04em;
+  word-break: break-word;
+}
+
+/* Fenced code blocks — override inline treatment */
+.md-typeset pre {
+  border: 1px solid var(--oac-border-light);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.md-typeset pre > code {
+  background-color: var(--oac-pre-bg);
+  border: none;
+  border-radius: 0;
+  padding: 0.75rem 1rem;
+  letter-spacing: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Syntax highlight toolbar */
+.md-typeset .highlight {
+  border-radius: 0;
+}
+
+.md-typeset .highlight .filename {
+  background-color: #e8e8e8;
+  border-bottom: 1px solid var(--oac-border-light);
+  border-radius: 0;
+  font-size: 0.75rem;
+  color: var(--oac-black);
+  padding: 0.3rem 0.75rem;
+}
+
+/* --- Admonitions ---------------------------------------- */
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-left: 3px solid var(--oac-black);
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 0.82rem;
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+  font-weight: 700;
+  font-size: 0.82rem;
+  background-color: #f0f0f0;
+}
+
+.md-typeset .note > .admonition-title  { border-color: var(--oac-border); }
+.md-typeset .warning > .admonition-title { border-color: #8b4000; }
+.md-typeset .tip > .admonition-title   { border-color: var(--oac-green); }
+
+/* --- Footer --------------------------------------------- */
+
+.md-footer {
+  background-color: transparent;
+  border: none;
+  color: var(--oac-black);
+  font-size: 0.78rem;
+}
+
+/* Transparent container — let md-grid handle centering and max-width */
+.md-footer__inner {
+  margin-bottom: 1rem;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* At wide viewports the sidebar is visible; offset the card past it */
+/* @media screen and (min-width: 76.25em) {
+  .md-footer__inner {
+    padding-left: var(--md-sidebar-width, 12.1rem);
+  }
+} */
+
+/* Remove meta footer */
+.md-footer-meta {
+  display: none;
+}
+
+/* Floating card — matches .md-content__inner */
+.oac-footer-card {
+  flex: 1; /* fill remaining grid width (md-grid is a flex container) */
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--oac-border);
+  box-shadow: 2px 2px 0 var(--oac-shadow);
+  background: var(--oac-white);
+  padding: 0.35rem 1.75rem;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.oac-footer__copy {
+  font-size: var(--oac-size);
+  color: var(--oac-border);
+}
+
+.oac-footer__copy a {
+  color: var(--oac-border);
+  text-underline-offset: 2px;
+}
+
+.oac-footer__copy a:hover {
+  color: var(--oac-green);
+}
+
+
+/* --- Active nav indicator ------------------------------- */
+
+/* Colored bullet before active sidebar link — mirrors USG's red ● on active tab */
+.md-nav__link--active {
+  color: var(--oac-green) !important;
+  font-weight: 700;
+}
+
+.md-nav__link--active::before {
+  content: "●";
+  color: var(--oac-green);
+  font-size: 0.55em;
+  margin-right: 0.35em;
+  vertical-align: middle;
+}
+
+
+/* --- USG sitemap tree style for TOC -------------------- */
+
+/* Scope: .md-nav__item--active > .md-nav is the TOC sub-nav
+   inside the active page's nav item (toc.integrate) */
+
+.md-nav--secondary,
+.md-nav__item--active > .md-nav {
+  border-left: none !important;
+}
+
+.md-nav__item--active > .md-nav .md-nav__list {
+  margin: 0.35rem 0 0.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each TOC li: vertical connecting line + context for ::before */
+.md-nav__item--active > .md-nav .md-nav__list .md-nav__item {
+  position: relative;
+  border-left: 1px solid var(--oac-black);
+  list-style: none;
+  margin: 0;
+  padding: 0.1rem 0;
+}
+
+/* Last item at each level: end the vertical line */
+.md-nav__item--active > .md-nav .md-nav__list .md-nav__item:last-child {
+  border-left: 1px solid transparent;
+}
+
+/* L-shaped connector — same technique as USG:
+   border-width: 0 0 1px 1px draws a bottom + left edge = corner.
+   Fixed height (not 50%) so the horizontal arm always hits the link
+   center even when the li is tall due to nested children. */
+.md-nav__item--active > .md-nav .md-nav__list .md-nav__item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  height: 1.05rem;
+  left: -1px;
+  width: 1.5rem;
+  border-width: 0 0 1px 1px;
+  border-style: none none solid solid;
+  border-color: transparent transparent var(--oac-black) var(--oac-black);
+  pointer-events: none;
+}
+
+/* TOC link: btn-classic bordered box node */
+.md-nav__item--active > .md-nav .md-nav__link {
+  display: inline-block !important;
+  position: relative;
+  margin: 0.2rem 0 0.2rem 1.5rem; /* left margin = connector width */
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--oac-black);
+  background: var(--oac-white);
+  box-shadow: 2px 2px 0 var(--oac-shadow);
+  font-size: 0.75rem;
+  color: var(--oac-black) !important;
+  text-decoration: none;
+  opacity: 1;
+  line-height: 1.4;
+}
+
+/* Suppress the green bullet — connector replaces it */
+.md-nav__item--active > .md-nav .md-nav__link::before {
+  content: none !important;
+}
+
+/* Hover: invert (USG btn-classic hover) */
+.md-nav__item--active > .md-nav .md-nav__link:hover {
+  background: var(--oac-black);
+  color: var(--oac-white) !important;
+  box-shadow: none;
+}
+
+/* Active TOC heading: filled black */
+.md-nav__item--active > .md-nav .md-nav__link--active {
+  background: var(--oac-black);
+  color: var(--oac-white) !important;
+  font-weight: 400;
+  box-shadow: none;
+}
+
+/* Sub-tree indent for h3/h4 headings */
+.md-nav__item--active > .md-nav .md-nav__item > .md-nav {
+  margin-left: 1.5rem;
+}
+
+/* --- Scrollbar (webkit) --------------------------------- */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--oac-page-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--oac-border-light);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--oac-border);
+}
