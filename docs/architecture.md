@@ -40,15 +40,15 @@ A compliant orchestrator in any environment can read that contract and fulfill i
 
 **The artifact author** (the person writing the Dockerfile) declares:
 
-- Which LLM provider and model the agent targets
+- Which inference capabilities and models the agent requires
 - Which MCP servers need OAuth credentials, and what auth methods are acceptable
 - What filesystem workspaces the agent needs and whether they must be writable
 - How the harness connects to the orchestrator and how that connection is authenticated
-- Which application-level events the agent subscribes to, with their protobuf schemas
+- Which application-level event channels the agent subscribes to, and their schemas
 
 **The orchestrator** reads those declarations and decides how to satisfy them:
 
-- Which Ollama instance to point at for this deployment
+- Which inference gateway to inject, after validating declared model availability
 - Which registered OAuth client or IAT to use for each MCP server
 - Which volumes to mount and where
 - What token or certificate to issue the harness for its outbound stream
@@ -76,7 +76,7 @@ never appear in the image.
 
 **Registration time** — When the image is registered with the orchestrator (not at every cold
 start), the orchestrator inspects the labels and, for agents with event subscriptions, extracts
-the compiled protobuf schema from the image. It caches everything it needs to act on an inbound
+the declared schema files from the image. It caches everything it needs to act on an inbound
 event before the container is running.
 
 **Startup time** — When the orchestrator launches the container, it performs Dynamic Client
@@ -94,13 +94,14 @@ participate in the OAC ecosystem.
 **Orchestrator connection** — The harness must initiate an outbound ConnectRPC bidirectional
 stream to the orchestrator at startup, using the address injected via the env var declared in
 `orchestrator.env`. If the image declares an auth method (`orchestrator.bearer.*` or
-`orchestrator.mtls.*`), the harness must use the injected credentials to authenticate that stream.
-On connect, the harness sends a registration frame so the orchestrator can validate its declared
-schemas.
+`orchestrator.mtls.*`), the harness must use the injected credentials to authenticate the stream.
+Establishing the stream is the signal that the harness is ready to receive events — no separate
+registration message is required. ConnectRPC supports the Connect, gRPC, and gRPC-Web protocols;
+compliant harnesses must speak at least one.
 
-**Event schema file** — If the image declares event subscriptions, it must bundle a compiled
-`google.protobuf.FileDescriptorSet` at `/oaa/events.pb`. This file must be present in the image
-at build time so the orchestrator can extract and cache the schemas without running the container.
+**Event schema files** — If the image declares event subscriptions, each schema file must be
+present in the image at its declared path at build time. The orchestrator extracts these files
+from the image without running the container; schema files must not be generated at runtime.
 
 These requirements define the communication contract between the harness and the orchestrator.
 Everything else — how the agent reasons, which tools it uses, how it structures its prompt — is

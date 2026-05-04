@@ -17,18 +17,52 @@ lookups).
 
 ## Inference
 
-Declares the inference provider and model the agent targets. Values may reference environment
-variables using `$VAR` syntax — resolution is the infrastructure's responsibility.
+Declares what inference capabilities the agent requires. The orchestrator validates that the
+configured inference gateway satisfies all declared requirements before deploying the agent.
+
+**Connection** (required if any inference type is declared):
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.inference.provider="ollama"
-LABEL org.openagentcontainers.v1.inference.model="$OLLAMA_MODEL"
+LABEL org.openagentcontainers.v1.inference.api_base.env="OPENAI_BASE_URL"
+LABEL org.openagentcontainers.v1.inference.api_key.env="OPENAI_API_KEY"
 ```
 
 | Label | Description |
 |---|---|
-| `inference.provider` | Provider identifier (e.g. `ollama`). |
-| `inference.model` | Model identifier or `$VAR` reference. |
+| `inference.api_base.env` | Env var name the orchestrator MUST inject the gateway base URL into. |
+| `inference.api_key.env` | Env var name the orchestrator MUST inject the API key into. |
+
+The gateway must expose an OpenAI-compatible API (`POST /v1/chat/completions`, etc.).
+
+**Per-type model requirements:**
+
+```dockerfile
+LABEL org.openagentcontainers.v1.inference.<type>.models="<model-id> [<model-id> ...]"
+```
+
+`<type>` is derived from the OpenAI API endpoint path: strip `/v1/` and replace `/` with `-`.
+
+| Type key | OpenAI endpoint |
+|---|---|
+| `chat-completions` | `POST /v1/chat/completions` |
+| `embeddings` | `POST /v1/embeddings` |
+| `images-generations` | `POST /v1/images/generations` |
+| `audio-speech` | `POST /v1/audio/speech` |
+| `audio-transcriptions` | `POST /v1/audio/transcriptions` |
+| `moderations` | `POST /v1/moderations` |
+
+`models` is a space-separated list of model identifiers. **All listed models must be available**
+on the configured gateway — the orchestrator validates each at deploy time and fails deployment if
+any are missing. Undeclared types receive no validation and the harness must not use them.
+
+**Example:**
+
+```dockerfile
+LABEL org.openagentcontainers.v1.inference.api_base.env="OPENAI_BASE_URL"
+LABEL org.openagentcontainers.v1.inference.api_key.env="OPENAI_API_KEY"
+LABEL org.openagentcontainers.v1.inference.chat-completions.models="gpt-4o llama-3.1-8b-instruct"
+LABEL org.openagentcontainers.v1.inference.embeddings.models="text-embedding-3-small"
+```
 
 ---
 
@@ -133,17 +167,17 @@ snapshot.
 
 ## Orchestrator
 
-Declares how the harness connects to the orchestrator at startup. The harness initiates an outbound
-ConnectRPC bidirectional stream to the orchestrator; the orchestrator injects its address via the
-declared env var.
+Required. Declares how the harness connects to the orchestrator at startup. The orchestrator
+injects its address via the declared env var; the harness uses it to establish a connection on
+startup.
 
 ```dockerfile
 LABEL org.openagentcontainers.v1.orchestrator.env="ORCHESTRATOR_ADDR"
 ```
 
-The harness MAY declare an auth method for the orchestrator connection. Auth methods follow the same
-sub-namespace pattern as MCP credentials — declare whichever methods the harness supports; the
-orchestrator satisfies one.
+The harness MUST declare at least one auth method for the orchestrator connection. Auth methods
+follow the same sub-namespace pattern as MCP credentials — declare whichever methods the harness
+supports; the orchestrator satisfies one.
 
 ### Bearer
 
@@ -193,55 +227,39 @@ independent: the mesh is a deployment concern, not a spec concern.
 
 ## Event Subscriptions
 
-Declares the application-level events the agent wants to receive from the orchestrator. Each label
-maps an event name to a fully-qualified protobuf message type (leading dot is standard proto
-convention for fully-qualified names). The orchestrator uses these mappings to route and transform
-inbound events before delivering them to the agent over the bidirectional stream.
+Declares the application-level event channels the agent subscribes to. Each channel is declared
+with a schema file embedded in the image — the orchestrator extracts and caches these schemas at
+registration time so it can configure event transformation before the agent starts.
+
+Channel names must conform to the DNS label standard (RFC 1123): lowercase alphanumeric characters
+and `-`, starting with an alphabetic character, ending with an alphanumeric character, max 63
+characters.
+
+Each channel declaration requires two labels:
+
+| Label | Description |
+|---|---|
+| `events.<name>.schema.path` | Path to the schema file within the image. |
+| `events.<name>.schema.mimetype` | MIME type of the schema file (e.g. `application/schema+json`, `application/protobuf`). |
+
+Both labels are required per channel. The schema file must be present in the image at the declared
+path at build time. Schema files may be placed at any path within the image.
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.events.pagerduty_alert=".com.acme.MyPagerDutyFormat"
-LABEL org.openagentcontainers.v1.events.workflow_response=".com.acme.WorkflowResponse"
+LABEL org.openagentcontainers.v1.events.pagerduty-alert.schema.path="/oaa/schemas/pagerduty-alert.json"
+LABEL org.openagentcontainers.v1.events.pagerduty-alert.schema.mimetype="application/schema+json"
+
+LABEL org.openagentcontainers.v1.events.workflow-response.schema.path="/oaa/schemas/workflow-response.pb"
+LABEL org.openagentcontainers.v1.events.workflow-response.schema.mimetype="application/protobuf"
 ```
 
-### Schema File
+### Registration
 
-The image MUST contain a compiled `google.protobuf.FileDescriptorSet` at the fixed path:
+The orchestrator inspects the image once at registration time:
 
-```
-/oaa/events.pb
-```
+1. Reads labels to collect `{ channel_name → { path, mimetype } }` mappings.
+2. Extracts each declared schema file from the image.
+3. Caches the schemas keyed by channel name.
 
-Generated at build time via:
-
-```bash
-protoc --descriptor_set_out=/oaa/events.pb --include_imports <your .proto files>
-```
-
-The `--include_imports` flag is required so all transitive dependencies are bundled — the
-orchestrator has no access to the original `.proto` source files.
-
-> The path `/oaa/events.pb` is fixed in this version of the spec. A future version MAY allow it to
-> be overridden via a label.
-
-### Registration Flow
-
-The orchestrator inspects the image once at registration time (not at cold-start):
-
-1. Reads labels to collect `{ event_name → message_type }` mappings.
-2. Extracts `/oaa/events.pb` from the image without running it.
-3. Deserializes the `FileDescriptorSet` and looks up each declared message type.
-4. Caches the resolved descriptors keyed by event name.
-
-When an inbound event arrives and the agent is not running, the orchestrator already holds the
-schema and can transform the payload before starting the container. Once the agent connects and
-sends its registration frame over the stream, the orchestrator MAY validate the declared schemas
-against its cache.
-
-### Extracting the Schema File
-
-Compliant orchestrators MUST extract `/oaa/events.pb` via direct OCI registry access. The `crane`
-library (`github.com/google/go-containerregistry/pkg/crane`) is the recommended implementation:
-
-```bash
-crane export ghcr.io/org/my-agent:latest - | tar xf - --to-stdout oaa/events.pb > events.pb
-```
+The orchestrator uses these cached schemas to configure event transformation — mapping incoming
+receiver payloads to the format the harness expects — before the agent starts.
