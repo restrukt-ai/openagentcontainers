@@ -190,9 +190,19 @@ An Agent Artifact is a valid OCI image. All OAC-specific metadata is expressed a
 labels — key-value string pairs embedded in the image config at build time. No additional manifest
 types or custom media types are required at the OCI level.
 
-All OAC labels MUST be namespaced under `org.openagentcontainers.v1`. Labels outside this
-namespace are not governed by this specification and MUST be ignored by conformant orchestrators
-when performing OAC-specific processing.
+A conformant Agent Artifact MUST include the following label:
+
+```dockerfile
+LABEL org.openagentcontainers.version="v1"
+```
+
+This label declares the spec major version the artifact conforms to. The orchestrator reads this
+label first to determine whether it can process the artifact. The value MUST be a single version
+identifier (e.g., `"v1"`); declaring multiple versions in a single artifact is not permitted.
+
+All OAC dependency labels MUST be namespaced under `org.openagentcontainers.v1`. Labels outside
+this namespace are not governed by this specification and MUST be ignored by conformant
+orchestrators when performing OAC-specific processing.
 
 ### 4.2 Label Conventions
 
@@ -423,6 +433,8 @@ Three conformance classes are defined: Producer, Orchestrator, and Harness.
 
 A conformant Producer MUST:
 
+- Include the `org.openagentcontainers.version` label set to the spec major version the artifact
+  targets (e.g., `"v1"`).
 - Include the `org.openagentcontainers.v1.name` label.
 - Include the `org.openagentcontainers.v1.orchestrator.env` label.
 - Declare at least one orchestrator auth method (`orchestrator.bearer.*` or `orchestrator.mtls.*`).
@@ -437,6 +449,9 @@ A conformant Producer MUST:
 
 A conformant Orchestrator MUST:
 
+- Read `org.openagentcontainers.version` before processing any other OAC labels.
+- Fail deployment if `org.openagentcontainers.version` is absent or declares a version the
+  orchestrator does not support, with a diagnostic identifying the unsupported version.
 - Read all `org.openagentcontainers.v1.*` labels from Agent Artifacts before deployment.
 - Inject the inference gateway base URL and API key into the env vars declared by
   `inference.api_base.env` and `inference.api_key.env`.
@@ -503,12 +518,12 @@ fail deployment with a diagnostic indicating which auth method could not be sati
 A conformant Orchestrator MUST ignore labels under `org.openagentcontainers.v1` that it does not
 recognize. Unknown labels MUST NOT cause deployment failure.
 
-### 7.6 Future Spec Versions
+### 7.6 Unsupported Spec Version
 
-<!--
-  How should a v1 orchestrator behave against an image declaring v2 labels?
-  Define behavior here once versioning scheme is settled (§8.2).
--->
+If `org.openagentcontainers.version` declares a version the orchestrator does not support, the
+orchestrator MUST fail deployment. It MUST NOT attempt to process the artifact's dependency labels
+or apply partial behavior based on labels it recognizes. The failure diagnostic MUST include the
+version value declared in the artifact and the versions the orchestrator supports.
 
 ---
 
@@ -534,17 +549,36 @@ This specification document uses [Semantic Versioning 2.0.0]:
 
 ### 8.3 Artifact Version Negotiation
 
-<!--
-  Define how an orchestrator determines which spec version an artifact targets,
-  and how it behaves against an artifact declaring a label namespace version
-  the orchestrator does not support.
--->
+A conformant orchestrator determines the spec version of an artifact by reading the explicit
+`org.openagentcontainers.version` label (§4.1). This label is the sole source of truth for
+version detection; the orchestrator MUST NOT infer the version from the label namespace alone.
+
+An artifact MUST declare exactly one version. Multi-version coexistence — declaring labels from
+multiple spec versions in a single image — is not permitted. When a new major version is released,
+producers MUST publish a new image targeting the new version; they MUST NOT add new-version labels
+alongside old-version labels in the same image.
+
+If the declared version is not supported by the orchestrator, deployment MUST fail (§7.6). There
+is no fallback or degraded-mode behavior for version mismatches.
 
 ### 8.4 Deprecation Policy
 
-<!--
-  Define the process for deprecating label keys across minor/major versions.
--->
+A label is deprecated when a preferred replacement is introduced. Deprecated labels MUST remain
+supported for at least **one minor version AND six months** after the minor version that introduced
+the deprecation — whichever is longer. Deprecated labels are removed only at a major version
+increment, which also produces a new label namespace.
+
+The spec document marks deprecated labels in the label reference tables with a "Deprecated since
+vX.Y" annotation. The deprecating minor version's changelog MUST identify the deprecated label
+and its replacement.
+
+A conformant orchestrator SHOULD emit a warning at registration time when it encounters a label
+documented as deprecated in the declared spec version. The warning MUST identify the deprecated
+label key and, where a replacement exists, the replacement key. This warning MUST NOT prevent
+deployment.
+
+Build-time detection of deprecated labels is the responsibility of linting tooling, not the
+orchestrator. The spec does not define a machine-readable deprecation signal in the image itself.
 
 ---
 
@@ -715,6 +749,7 @@ enables orchestrators to read requirements without ever starting a container.
 ```dockerfile
 FROM node:22-alpine
 
+LABEL org.openagentcontainers.version="v1"
 LABEL org.openagentcontainers.v1.name="minimal-agent"
 
 LABEL org.openagentcontainers.v1.orchestrator.env="ORCHESTRATOR_ADDR"
@@ -733,6 +768,7 @@ CMD ["node", "/app/harness.js"]
 ```dockerfile
 FROM python:3.12-slim
 
+LABEL org.openagentcontainers.version="v1"
 LABEL org.openagentcontainers.v1.name="pi-weather"
 
 LABEL org.openagentcontainers.v1.orchestrator.env="ORCHESTRATOR_ADDR"

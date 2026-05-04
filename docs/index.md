@@ -29,6 +29,7 @@ The current version is **`v1`**.
 ```dockerfile
 FROM node:25-alpine3.22
 
+LABEL org.openagentcontainers.version="v1"
 LABEL org.openagentcontainers.v1.name="pi-weather"
 LABEL org.openagentcontainers.v1.inference.api_base.env="OPENAI_BASE_URL"
 LABEL org.openagentcontainers.v1.inference.api_key.env="OPENAI_API_KEY"
