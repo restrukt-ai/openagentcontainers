@@ -1,13 +1,13 @@
 # Label reference
 
-All labels are namespaced under `org.openagentcontainers.v1`.
+All labels are namespaced under `org.openagentcontainers`. The spec version is declared separately via the `org.openagentcontainers.version` label.
 
 ---
 
 ## Identity
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.name="my-agent"
+LABEL org.openagentcontainers.name="my-agent"
 ```
 
 The agent name. Used by the orchestrator to key agent-specific configuration (e.g. MCP credential
@@ -23,8 +23,8 @@ configured inference gateway satisfies all declared requirements before deployin
 **Connection** (required if any inference type is declared):
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.inference.api_base.env="OPENAI_BASE_URL"
-LABEL org.openagentcontainers.v1.inference.api_key.env="OPENAI_API_KEY"
+LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
+LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
 ```
 
 | Label | Description |
@@ -37,7 +37,7 @@ The gateway must expose an OpenAI-compatible API (`POST /v1/chat/completions`, e
 **Per-type model requirements:**
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.inference.<type>.models="<model-id> [<model-id> ...]"
+LABEL org.openagentcontainers.inference.<type>.models="<model-id> [<model-id> ...]"
 ```
 
 `<type>` is derived from the OpenAI API endpoint path: strip `/v1/` and replace `/` with `-`.
@@ -58,10 +58,10 @@ any are missing. Undeclared types receive no validation and the harness must not
 **Example:**
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.inference.api_base.env="OPENAI_BASE_URL"
-LABEL org.openagentcontainers.v1.inference.api_key.env="OPENAI_API_KEY"
-LABEL org.openagentcontainers.v1.inference.chat-completions.models="gpt-4o llama-3.1-8b-instruct"
-LABEL org.openagentcontainers.v1.inference.embeddings.models="text-embedding-3-small"
+LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
+LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
+LABEL org.openagentcontainers.inference.chat-completions.models="gpt-4o llama-3.1-8b-instruct"
+LABEL org.openagentcontainers.inference.embeddings.models="text-embedding-3-small"
 ```
 
 ---
@@ -96,11 +96,11 @@ using an IAT it holds, then delivers the resulting credentials to the container.
 | `mcp.<name>.dcr.client_secret.file` | Path the orchestrator MUST write the registered client secret to. |
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.mcp.calendar.dcr.scopes="calendar:read calendar:write"
-LABEL org.openagentcontainers.v1.mcp.calendar.dcr.client_id.env="CALENDAR_CLIENT_ID"
-LABEL org.openagentcontainers.v1.mcp.calendar.dcr.client_id.file="/run/secrets/calendar_client_id"
-LABEL org.openagentcontainers.v1.mcp.calendar.dcr.client_secret.env="CALENDAR_CLIENT_SECRET"
-LABEL org.openagentcontainers.v1.mcp.calendar.dcr.client_secret.file="/run/secrets/calendar_client_secret"
+LABEL org.openagentcontainers.mcp.calendar.dcr.scopes="calendar:read calendar:write"
+LABEL org.openagentcontainers.mcp.calendar.dcr.client_id.env="CALENDAR_CLIENT_ID"
+LABEL org.openagentcontainers.mcp.calendar.dcr.client_id.file="/run/secrets/calendar_client_id"
+LABEL org.openagentcontainers.mcp.calendar.dcr.client_secret.env="CALENDAR_CLIENT_SECRET"
+LABEL org.openagentcontainers.mcp.calendar.dcr.client_secret.file="/run/secrets/calendar_client_secret"
 ```
 
 ### OAuth
@@ -114,8 +114,8 @@ The client is pre-registered. The orchestrator injects a pre-configured `client_
 | `mcp.<name>.oauth.client_secret.env` / `.file` | Where the orchestrator delivers the client secret. |
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.mcp.calendar.oauth.client_id.env="CALENDAR_CLIENT_ID"
-LABEL org.openagentcontainers.v1.mcp.calendar.oauth.client_secret.env="CALENDAR_CLIENT_SECRET"
+LABEL org.openagentcontainers.mcp.calendar.oauth.client_id.env="CALENDAR_CLIENT_ID"
+LABEL org.openagentcontainers.mcp.calendar.oauth.client_secret.env="CALENDAR_CLIENT_SECRET"
 ```
 
 ### Bearer
@@ -128,8 +128,8 @@ The orchestrator injects a static token.
 | `mcp.<name>.bearer.token.file` | Path the orchestrator MUST write the token to. |
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.mcp.calendar.bearer.token.env="CALENDAR_TOKEN"
-LABEL org.openagentcontainers.v1.mcp.calendar.bearer.token.file="/run/secrets/calendar_token"
+LABEL org.openagentcontainers.mcp.calendar.bearer.token.env="CALENDAR_TOKEN"
+LABEL org.openagentcontainers.mcp.calendar.bearer.token.file="/run/secrets/calendar_token"
 ```
 
 At least one of `.env` or `.file` MUST be declared for each credential. Both MAY be declared
@@ -151,8 +151,8 @@ An agent MAY declare multiple workspaces.
 | `workspace.<name>.mutable` | `"true"` for read-write, `"false"` or absent for read-only. |
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.workspace.project.path="/workspace"
-LABEL org.openagentcontainers.v1.workspace.project.mutable="true"
+LABEL org.openagentcontainers.workspace.project.path="/workspace"
+LABEL org.openagentcontainers.workspace.project.mutable="true"
 ```
 
 `mutable` defaults to `false` when absent.
@@ -172,7 +172,7 @@ injects its address via the declared env var; the harness uses it to establish a
 startup.
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.orchestrator.env="ORCHESTRATOR_ADDR"
+LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_ADDR"
 ```
 
 The harness MUST declare at least one auth method for the orchestrator connection. Auth methods
@@ -190,8 +190,8 @@ The orchestrator injects a short-lived signed token. The harness sends it as
 | `orchestrator.bearer.token.file` | Path the orchestrator MUST write the token to. |
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.orchestrator.bearer.token.env="ORCHESTRATOR_TOKEN"
-LABEL org.openagentcontainers.v1.orchestrator.bearer.token.file="/run/secrets/orchestrator_token"
+LABEL org.openagentcontainers.orchestrator.bearer.token.env="ORCHESTRATOR_TOKEN"
+LABEL org.openagentcontainers.orchestrator.bearer.token.file="/run/secrets/orchestrator_token"
 ```
 
 At least one of `.env` or `.file` MUST be declared. Both MAY be declared simultaneously, in which
@@ -209,9 +209,9 @@ during the TLS handshake — the cert is the identity, no separate token is need
 | `orchestrator.mtls.ca.file` | Path the orchestrator MUST write its CA certificate (PEM) to. Used by the harness to verify the orchestrator's server cert. |
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.orchestrator.mtls.cert.file="/run/secrets/harness.crt"
-LABEL org.openagentcontainers.v1.orchestrator.mtls.key.file="/run/secrets/harness.key"
-LABEL org.openagentcontainers.v1.orchestrator.mtls.ca.file="/run/secrets/ca.crt"
+LABEL org.openagentcontainers.orchestrator.mtls.cert.file="/run/secrets/harness.crt"
+LABEL org.openagentcontainers.orchestrator.mtls.key.file="/run/secrets/harness.key"
+LABEL org.openagentcontainers.orchestrator.mtls.ca.file="/run/secrets/ca.crt"
 ```
 
 mTLS here is managed entirely by the orchestrator — it acts as the CA, signs a client certificate
@@ -246,11 +246,11 @@ Both labels are required per channel. The schema file must be present in the ima
 path at build time. Schema files may be placed at any path within the image.
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.events.pagerduty-alert.schema.path="/oaa/schemas/pagerduty-alert.json"
-LABEL org.openagentcontainers.v1.events.pagerduty-alert.schema.mimetype="application/schema+json"
+LABEL org.openagentcontainers.events.pagerduty-alert.schema.path="/oaa/schemas/pagerduty-alert.json"
+LABEL org.openagentcontainers.events.pagerduty-alert.schema.mimetype="application/schema+json"
 
-LABEL org.openagentcontainers.v1.events.workflow-response.schema.path="/oaa/schemas/workflow-response.pb"
-LABEL org.openagentcontainers.v1.events.workflow-response.schema.mimetype="application/protobuf"
+LABEL org.openagentcontainers.events.workflow-response.schema.path="/oaa/schemas/workflow-response.pb"
+LABEL org.openagentcontainers.events.workflow-response.schema.mimetype="application/protobuf"
 ```
 
 ### Registration

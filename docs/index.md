@@ -1,7 +1,7 @@
 # Open Agent Containers
 
 An **Open Agent Container** (OAC) is a standard Docker image annotated with
-`org.openagentcontainers.v1.*` labels. The labels declare what the agent needs from its runtime
+`org.openagentcontainers.*` labels. The labels declare what the agent needs from its runtime
 environment — the controlling infrastructure reads them and provisions resources accordingly.
 
 ## Concept
@@ -19,8 +19,9 @@ extensions, tooling). The labels describe the agent's interface with the outside
 
 ## Label Namespace
 
-All labels are namespaced under `org.openagentcontainers`. Configuration is declared under a major
-version identifier like `v1`, which allows the spec to evolve without breaking existing tooling.
+All labels are namespaced under `org.openagentcontainers`. The spec version is declared
+via a dedicated label — `org.openagentcontainers.version` — rather than encoded in the namespace,
+which keeps every other label key stable across major versions.
 
 The current version is **`v1`**.
 
@@ -30,10 +31,10 @@ The current version is **`v1`**.
 FROM node:25-alpine3.22
 
 LABEL org.openagentcontainers.version="v1"
-LABEL org.openagentcontainers.v1.name="pi-weather"
-LABEL org.openagentcontainers.v1.inference.api_base.env="OPENAI_BASE_URL"
-LABEL org.openagentcontainers.v1.inference.api_key.env="OPENAI_API_KEY"
-LABEL org.openagentcontainers.v1.inference.chat-completions.models="llama3.2"
+LABEL org.openagentcontainers.name="pi-weather"
+LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
+LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
+LABEL org.openagentcontainers.inference.chat-completions.models="llama3.2"
 
 RUN npm install -g @mariozechner/pi-coding-agent
 # ... rest of build
@@ -52,7 +53,7 @@ docker image inspect pi-weather --format '{{json .Config.Labels}}' | jq
 docker manifest inspect ghcr.io/org/pi-weather:latest
 ```
 
-Infrastructure reading labels at runtime should prefix-scan for `org.openagentcontainers.v1.` and
+Infrastructure reading labels at runtime should prefix-scan for `org.openagentcontainers.` and
 parse the structured fields from the flat key hierarchy.
 
 ## What the Spec Does Not Cover

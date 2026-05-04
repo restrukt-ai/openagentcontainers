@@ -131,7 +131,7 @@ as shown here.
 | **Producer** | An entity that creates and publishes a conformant Agent Artifact (typically a Dockerfile author or CI pipeline) |
 | **Consumer / Orchestrator** | An entity that ingests an Agent Artifact, reads its labels, and provisions the declared dependencies at deploy time |
 | **Harness** | The process inside the container that drives the agent's reasoning loop; must satisfy the runtime interface requirements in §4.3 |
-| **Label Namespace** | The `org.openagentcontainers.v1` prefix under which all OAC labels are declared |
+| **Label Namespace** | The `org.openagentcontainers` prefix under which all OAC labels are declared |
 | **Dependency Declaration** | One or more labels in the Label Namespace that describe a resource the agent requires at runtime |
 | **Event Channel** | A named application-level event stream the agent subscribes to, declared with a schema file embedded in the image |
 | **Schema File** | A file embedded in the image at build time that describes the payload format for an event channel |
@@ -200,7 +200,7 @@ This label declares the spec major version the artifact conforms to. The orchest
 label first to determine whether it can process the artifact. The value MUST be a single version
 identifier (e.g., `"v1"`); declaring multiple versions in a single artifact is not permitted.
 
-All OAC dependency labels MUST be namespaced under `org.openagentcontainers.v1`. Labels outside
+All OAC dependency labels MUST be namespaced under `org.openagentcontainers`. The `org.openagentcontainers.version` label is reserved and MUST NOT be used as a dependency label prefix. Labels outside
 this namespace are not governed by this specification and MUST be ignored by conformant
 orchestrators when performing OAC-specific processing.
 
@@ -209,7 +209,7 @@ orchestrators when performing OAC-specific processing.
 Label keys follow a hierarchical dot-separated structure:
 
 ```
-org.openagentcontainers.v1.<group>[.<name>].<attribute>[.<sub-attribute>]
+org.openagentcontainers.<group>[.<name>].<attribute>[.<sub-attribute>]
 ```
 
 Where `<group>` is one of: `name`, `inference`, `mcp`, `workspace`, `orchestrator`, `events`.
@@ -250,7 +250,7 @@ be present in the image at its declared path at build time.
 ### 5.1 Identity
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.name="my-agent"
+LABEL org.openagentcontainers.name="my-agent"
 ```
 
 The `name` label is REQUIRED. It identifies the agent and is used by the orchestrator to key
@@ -278,7 +278,7 @@ Both connection labels MUST be declared together. An image MUST NOT declare one 
 **Per-type model requirements:**
 
 ```
-org.openagentcontainers.v1.inference.<type>.models="<model-id> [<model-id> ...]"
+org.openagentcontainers.inference.<type>.models="<model-id> [<model-id> ...]"
 ```
 
 `<type>` is derived from the OpenAI API endpoint path: strip `/v1/` and replace `/` with `-`.
@@ -299,10 +299,10 @@ if any are missing. The harness MUST NOT use inference types that are not declar
 **Example:**
 
 ```dockerfile
-LABEL org.openagentcontainers.v1.inference.api_base.env="OPENAI_BASE_URL"
-LABEL org.openagentcontainers.v1.inference.api_key.env="OPENAI_API_KEY"
-LABEL org.openagentcontainers.v1.inference.chat-completions.models="gpt-4o llama-3.1-8b-instruct"
-LABEL org.openagentcontainers.v1.inference.embeddings.models="text-embedding-3-small"
+LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
+LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
+LABEL org.openagentcontainers.inference.chat-completions.models="gpt-4o llama-3.1-8b-instruct"
+LABEL org.openagentcontainers.inference.embeddings.models="text-embedding-3-small"
 ```
 
 ### 5.3 MCP Credentials
@@ -435,8 +435,8 @@ A conformant Producer MUST:
 
 - Include the `org.openagentcontainers.version` label set to the spec major version the artifact
   targets (e.g., `"v1"`).
-- Include the `org.openagentcontainers.v1.name` label.
-- Include the `org.openagentcontainers.v1.orchestrator.env` label.
+- Include the `org.openagentcontainers.name` label.
+- Include the `org.openagentcontainers.orchestrator.env` label.
 - Declare at least one orchestrator auth method (`orchestrator.bearer.*` or `orchestrator.mtls.*`).
 - If declaring any inference label, include both `inference.api_base.env` and `inference.api_key.env`.
 - If declaring an event channel, include both `events.<name>.schema.path` and
@@ -452,7 +452,7 @@ A conformant Orchestrator MUST:
 - Read `org.openagentcontainers.version` before processing any other OAC labels.
 - Fail deployment if `org.openagentcontainers.version` is absent or declares a version the
   orchestrator does not support, with a diagnostic identifying the unsupported version.
-- Read all `org.openagentcontainers.v1.*` labels from Agent Artifacts before deployment.
+- Read all `org.openagentcontainers.*` labels from Agent Artifacts before deployment.
 - Inject the inference gateway base URL and API key into the env vars declared by
   `inference.api_base.env` and `inference.api_key.env`.
 - Validate that all models listed in `inference.<type>.models` are available on the configured
@@ -492,7 +492,7 @@ MUST NOT claim full conformance unless all normative requirements of that class 
 ### 7.1 Missing Required Labels
 
 A conformant Orchestrator MUST refuse to deploy an Agent Artifact that is missing required labels.
-At minimum: if `org.openagentcontainers.v1.name` or `org.openagentcontainers.v1.orchestrator.env`
+At minimum: if `org.openagentcontainers.name` or `org.openagentcontainers.orchestrator.env`
 is absent, deployment MUST fail with a diagnostic indicating which label is missing.
 
 ### 7.2 Model Validation Failure
@@ -515,7 +515,7 @@ fail deployment with a diagnostic indicating which auth method could not be sati
 
 ### 7.5 Unknown Labels
 
-A conformant Orchestrator MUST ignore labels under `org.openagentcontainers.v1` that it does not
+A conformant Orchestrator MUST ignore labels under `org.openagentcontainers` that it does not
 recognize. Unknown labels MUST NOT cause deployment failure.
 
 ### 7.6 Unsupported Spec Version
@@ -529,15 +529,16 @@ version value declared in the artifact and the versions the orchestrator support
 
 ## 8. Versioning and Compatibility
 
-### 8.1 Label Namespace Versioning
+### 8.1 Versioning via the Version Label
 
-The label namespace includes the spec major version: `org.openagentcontainers.v1`. A breaking
-change to the label schema — removing a label, changing its semantics, or changing required
-structure — MUST result in a major version increment, producing a new namespace
-(`org.openagentcontainers.v2`). An orchestrator that supports `v1` is not required to support
-`v2` labels.
+The spec version is declared solely via the `org.openagentcontainers.version` label (§4.1).
+The dependency label namespace (`org.openagentcontainers.*`) is unversioned — it does not
+encode the spec version. The version label is the authoritative mechanism for negotiation
+between Producer and Orchestrator.
 
-The current label namespace version is **`v1`**.
+A breaking change to the label schema — removing a label, changing its semantics, or changing
+required structure — MUST result in a major version increment of the spec. The current spec
+version is **`v1`**.
 
 ### 8.2 Spec Document Versioning
 
@@ -750,14 +751,14 @@ enables orchestrators to read requirements without ever starting a container.
 FROM node:22-alpine
 
 LABEL org.openagentcontainers.version="v1"
-LABEL org.openagentcontainers.v1.name="minimal-agent"
+LABEL org.openagentcontainers.name="minimal-agent"
 
-LABEL org.openagentcontainers.v1.orchestrator.env="ORCHESTRATOR_ADDR"
-LABEL org.openagentcontainers.v1.orchestrator.bearer.token.env="ORCHESTRATOR_TOKEN"
+LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_ADDR"
+LABEL org.openagentcontainers.orchestrator.bearer.token.env="ORCHESTRATOR_TOKEN"
 
-LABEL org.openagentcontainers.v1.inference.api_base.env="OPENAI_BASE_URL"
-LABEL org.openagentcontainers.v1.inference.api_key.env="OPENAI_API_KEY"
-LABEL org.openagentcontainers.v1.inference.chat-completions.models="llama3.2"
+LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
+LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
+LABEL org.openagentcontainers.inference.chat-completions.models="llama3.2"
 
 COPY harness.js /app/harness.js
 CMD ["node", "/app/harness.js"]
@@ -769,27 +770,27 @@ CMD ["node", "/app/harness.js"]
 FROM python:3.12-slim
 
 LABEL org.openagentcontainers.version="v1"
-LABEL org.openagentcontainers.v1.name="pi-weather"
+LABEL org.openagentcontainers.name="pi-weather"
 
-LABEL org.openagentcontainers.v1.orchestrator.env="ORCHESTRATOR_ADDR"
-LABEL org.openagentcontainers.v1.orchestrator.mtls.cert.file="/run/secrets/harness.crt"
-LABEL org.openagentcontainers.v1.orchestrator.mtls.key.file="/run/secrets/harness.key"
-LABEL org.openagentcontainers.v1.orchestrator.mtls.ca.file="/run/secrets/ca.crt"
+LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_ADDR"
+LABEL org.openagentcontainers.orchestrator.mtls.cert.file="/run/secrets/harness.crt"
+LABEL org.openagentcontainers.orchestrator.mtls.key.file="/run/secrets/harness.key"
+LABEL org.openagentcontainers.orchestrator.mtls.ca.file="/run/secrets/ca.crt"
 
-LABEL org.openagentcontainers.v1.inference.api_base.env="OPENAI_BASE_URL"
-LABEL org.openagentcontainers.v1.inference.api_key.env="OPENAI_API_KEY"
-LABEL org.openagentcontainers.v1.inference.chat-completions.models="gpt-4o"
-LABEL org.openagentcontainers.v1.inference.embeddings.models="text-embedding-3-small"
+LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
+LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
+LABEL org.openagentcontainers.inference.chat-completions.models="gpt-4o"
+LABEL org.openagentcontainers.inference.embeddings.models="text-embedding-3-small"
 
-LABEL org.openagentcontainers.v1.mcp.calendar.dcr.scopes="calendar:read calendar:write"
-LABEL org.openagentcontainers.v1.mcp.calendar.dcr.client_id.env="CALENDAR_CLIENT_ID"
-LABEL org.openagentcontainers.v1.mcp.calendar.dcr.client_secret.env="CALENDAR_CLIENT_SECRET"
+LABEL org.openagentcontainers.mcp.calendar.dcr.scopes="calendar:read calendar:write"
+LABEL org.openagentcontainers.mcp.calendar.dcr.client_id.env="CALENDAR_CLIENT_ID"
+LABEL org.openagentcontainers.mcp.calendar.dcr.client_secret.env="CALENDAR_CLIENT_SECRET"
 
-LABEL org.openagentcontainers.v1.workspace.project.path="/workspace"
-LABEL org.openagentcontainers.v1.workspace.project.mutable="true"
+LABEL org.openagentcontainers.workspace.project.path="/workspace"
+LABEL org.openagentcontainers.workspace.project.mutable="true"
 
-LABEL org.openagentcontainers.v1.events.pagerduty-alert.schema.path="/oaa/schemas/pagerduty-alert.json"
-LABEL org.openagentcontainers.v1.events.pagerduty-alert.schema.mimetype="application/schema+json"
+LABEL org.openagentcontainers.events.pagerduty-alert.schema.path="/oaa/schemas/pagerduty-alert.json"
+LABEL org.openagentcontainers.events.pagerduty-alert.schema.mimetype="application/schema+json"
 
 COPY schemas/pagerduty-alert.json /oaa/schemas/pagerduty-alert.json
 COPY agent.py /app/agent.py
