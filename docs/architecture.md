@@ -22,7 +22,7 @@ or per-agent knowledge hardcoded into the infrastructure.
 ┌─────────────────────────────────────────────────────────┐
 │  Docker image                                           │
 │                                                         │
-│  runtime harness + prompt + tools (inside the image)   │
+│  runtime harness + prompt + tools (inside the image)    │
 │                                                         │
 │  labels: what I need from the outside world ──────────────────► orchestrator
 │    - inference endpoint                                 │
