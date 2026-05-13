@@ -12,20 +12,6 @@
 
 **Last Updated:** 2026-05-12
 
-# **CNCF TAG:** [TAG Workloads Foundation](https://github.com/cncf/toc/tree/main/tags/tag-workloads-foundation)
-
-# **Secondary TAG:** [TAG Developer Experience](https://github.com/cncf/toc/tree/main/tags/tag-developer-experience)
-
-# **Related Initiatives:**
-
-# - [#1740 Cloud Native and OCI Compliant Inner-Loop Tooling & Packaging for AI Engineers](https://github.com/cncf/toc/issues/1740)
-# - [#1746 Cloud-Native Foundations for Distributed Agentic Systems](https://github.com/cncf/toc/issues/1746)
-# - [#1749 Cloud-Native Agentic Standards Checklist](https://github.com/cncf/toc/issues/1749)
-
-# **TOC Liaison:** _(assigned at acceptance)_
-
-# **CNAI WG Slack:** [`#wg-artificial-intelligence`](https://cloud-native.slack.com/archives/...) on CNCF Slack
-
 ---
 
 ## Abstract
@@ -149,14 +135,11 @@ as shown here.
 
 _This section is informative._
 
-### 3.1 OCI Image Specification and ORAS
+### 3.1 OCI Image Specification
 
 This specification builds on the [OCI Image Format Specification] and [OCI Distribution
 Specification]. Agent Artifacts are valid OCI images; this specification defines additional
 constraints on label content and required embedded files on top of the base OCI image format.
-
-[ORAS] (OCI Registry as Storage) is a compatible mechanism for pushing and pulling Agent
-Artifacts; this specification does not require ORAS but does not preclude its use.
 
 ### 3.2 ModelPack / ModelKit (TOC Initiative #1740)
 
@@ -185,7 +168,7 @@ informed by that scope.
 ### 4.1 OCI Manifest Requirements
 
 An Agent Artifact is a valid OCI image. All OAC-specific metadata is expressed as OCI image
-labels — key-value string pairs embedded in the image config at build time. No additional manifest
+labels — key-value string pairs embedded in the image at build time. No additional manifest
 types or custom media types are required at the OCI level.
 
 A conformant Agent Artifact MUST include the following label:
@@ -196,12 +179,11 @@ LABEL org.openagentcontainers.version="v1alpha2"
 
 This label declares the spec version the artifact conforms to. The orchestrator reads this
 label first to determine whether it can process the artifact. The value MUST be a single version
-identifier (e.g., `"v1alpha2"`); declaring multiple versions in a single artifact is not permitted.
+identifier (e.g., `"v1alpha2"`).
 
-All OAC dependency labels MUST be namespaced under `org.openagentcontainers`. The
-`org.openagentcontainers.version` label is reserved and MUST NOT be used as a dependency label
-prefix. Labels outside this namespace are not governed by this specification and MUST be ignored by
-conformant orchestrators when performing OAC-specific processing.
+All OAC labels are namespaced under `org.openagentcontainers`. Labels outside this namespace are
+not governed by this specification and MUST be ignored by conformant orchestrators when performing
+OAC-specific processing.
 
 ### 4.2 Label Conventions
 
@@ -261,9 +243,8 @@ agent-specific configuration (e.g., MCP credential lookups).
 
 ### 5.2 Inference
 
-Declares what inference capabilities the agent requires. The orchestrator validates that its
-configured inference gateway satisfies all declared requirements before deploying the agent. The
-gateway MUST expose an OpenAI-compatible API.
+Declares what inference capabilities the agent requires. A conformant Orchestrator MUST only satisfy inference declarations using a gateway that exposes
+an OpenAI-compatible API.
 
 **Connection labels** — REQUIRED if any inference type is declared:
 
@@ -534,8 +515,7 @@ The spec version is declared via the `org.openagentcontainers.version` label (§
 authoritative mechanism for spec version negotiation between Producer and Orchestrator.
 
 A breaking change to the label schema — removing a label, changing its semantics, or changing
-required structure — MUST result in a major version increment of the spec. The current spec
-version is `v1alpha2`.
+required structure — requires a major version increment. The current spec version is `v1alpha2`.
 
 The version value encodes both a major version number and a maturity stage:
 
@@ -568,13 +548,13 @@ is no fallback or degraded-mode behavior for version mismatches.
 
 ### 8.3 Deprecation Policy
 
-A label is deprecated when a preferred replacement is introduced. Deprecated labels MUST remain
-supported for at least **one spec revision AND six months** after the revision that introduced
-the deprecation — whichever is longer. Deprecated labels are removed only at a major version
-increment.
+A label is deprecated when a preferred replacement is introduced. A conformant Orchestrator MUST
+continue to support deprecated labels for at least **one spec revision AND six months** after the
+revision that introduced the deprecation — whichever is longer. Deprecated labels are removed only
+at a major version increment.
 
 The spec document marks deprecated labels in the label reference tables with a "Deprecated in
-`<version>`" annotation. The changelog for the deprecating revision MUST identify the deprecated
+`<version>`" annotation. The changelog for the deprecating revision will identify the deprecated
 label and its replacement.
 
 A conformant orchestrator SHOULD emit a warning at registration time when it encounters a label
@@ -723,7 +703,6 @@ enables orchestrators to read requirements without ever starting a container.
 
 | Label                    | Reference                                                                                                                                                           |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [ORAS]                   | ORAS Project. "OCI Registry as Storage." https://oras.land                                                                                                          |
 | [ConnectRPC]             | Buf Technologies. "Connect Protocol." https://connectrpc.com                                                                                                        |
 | [SemVer]                 | Preston-Werner, T. "Semantic Versioning 2.0.0." https://semver.org                                                                                                  |
 | [TOC #1740]              | Caldeira, V. et al. "Cloud Native and OCI Compliant Inner-Loop Tooling & Packaging for AI Engineers." CNCF TOC Issue #1740. https://github.com/cncf/toc/issues/1740 |
@@ -821,7 +800,7 @@ to the wrong group.
 
 ## Revision History
 
-| Version  | Date       | Summary                                                                                                                                                    |
-| -------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Version  | Date       | Summary                                                                                                                           |
+| -------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | v1alpha2 | 2026-05-12 | Adopt Kubernetes-style maturity stages; unify spec document version with label version; document graduation path and §8 overhaul. |
-| v1alpha1 | 2026-05-04 | Initial draft; backported from docs/.                                                                                            |
+| v1alpha1 | 2026-05-04 | Initial draft; backported from docs/.                                                                                             |
