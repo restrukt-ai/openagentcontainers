@@ -19,18 +19,14 @@ extensions, tooling). The labels describe the agent's interface with the outside
 
 ## Label Namespace
 
-All labels are namespaced under `org.openagentcontainers`. The spec version is declared
-via a dedicated label — `org.openagentcontainers.version` — rather than encoded in the namespace,
-which keeps every other label key stable across major versions.
-
-The current version is `v1alpha1`.
+All labels are namespaced under `org.openagentcontainers`.
 
 ## Example
 
 ```dockerfile
 FROM node:25-alpine3.22
 
-LABEL org.openagentcontainers.version="v1alpha1"
+LABEL org.openagentcontainers.version="v1alpha2"
 LABEL org.openagentcontainers.name="pi-weather"
 LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
 LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"

@@ -4,9 +4,7 @@ All notable changes to the OAC specification are documented here.
 
 ---
 
-## v1alpha1 — 2026-05-12
-
-First versioned release.
+## v1alpha2 — 2026-05-12
 
 ### Changed
 
@@ -14,7 +12,7 @@ First versioned release.
   `org.openagentcontainers.version` label value are the same identifier — there is no separate
   document versioning scheme (§8.2).
 
-- **Label version updated from `v1` to `v1alpha1`.** The `org.openagentcontainers.version` label
+- **Label version updated from `v1` to `v1alpha2`.** The `org.openagentcontainers.version` label
   value now uses Kubernetes-style maturity stages to communicate spec stability. The progression
   is `v1alpha1` → … → `v1beta1` → … → `v1` (stable/GA), with a new major version resuming at
   `v2alpha1` (§8.1).
@@ -24,10 +22,9 @@ First versioned release.
 
 ---
 
-## pre-v1alpha1 draft — 2026-05-04
+## v1alpha1 — 2026-05-04
 
-Initial draft, backported from the `docs/` directory. Used a provisional `v1` label value before
-the versioning scheme was established.
+Initial release.
 
 ### Defined
 

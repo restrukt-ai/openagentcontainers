@@ -3,10 +3,10 @@
 # Open Agent Containers Specification
 
 **Status:** Draft
-**Version:** v1alpha1
+**Version:** v1alpha2
 **Authors:** [Brahm Lower](https://github.com/brahmlower) \<email\>
 **Created:** YYYY-MM-DD
-**Last Updated:** 2026-05-04
+**Last Updated:** 2026-05-12
 
 **CNCF TAG:** [TAG Workloads Foundation](https://github.com/cncf/toc/tree/main/tags/tag-workloads-foundation)
 **Secondary TAG:** [TAG Developer Experience](https://github.com/cncf/toc/tree/main/tags/tag-developer-experience)
@@ -193,12 +193,12 @@ types or custom media types are required at the OCI level.
 A conformant Agent Artifact MUST include the following label:
 
 ```dockerfile
-LABEL org.openagentcontainers.version="v1alpha1"
+LABEL org.openagentcontainers.version="v1alpha2"
 ```
 
 This label declares the spec version the artifact conforms to. The orchestrator reads this
 label first to determine whether it can process the artifact. The value MUST be a single version
-identifier (e.g., `"v1alpha1"`); declaring multiple versions in a single artifact is not permitted.
+identifier (e.g., `"v1alpha2"`); declaring multiple versions in a single artifact is not permitted.
 
 All OAC dependency labels MUST be namespaced under `org.openagentcontainers`. The
 `org.openagentcontainers.version` label is reserved and MUST NOT be used as a dependency label
@@ -435,7 +435,7 @@ Three conformance classes are defined: Producer, Orchestrator, and Harness.
 A conformant Producer MUST:
 
 - Include the `org.openagentcontainers.version` label set to the spec version the artifact
-  targets (e.g., `"v1alpha1"`).
+  targets (e.g., `"v1alpha2"`).
 - Include the `org.openagentcontainers.name` label.
 - Include the `org.openagentcontainers.orchestrator.env` label.
 - Declare at least one orchestrator auth method (`orchestrator.bearer.*` or `orchestrator.mtls.*`).
@@ -539,7 +539,7 @@ between Producer and Orchestrator.
 
 A breaking change to the label schema — removing a label, changing its semantics, or changing
 required structure — MUST result in a major version increment of the spec. The current spec
-version is **`v1alpha1`**.
+version is **`v1alpha2`**.
 
 The version value encodes both a major version number and a maturity stage:
 
@@ -772,7 +772,7 @@ _Informative._
 ```dockerfile
 FROM node:22-alpine
 
-LABEL org.openagentcontainers.version="v1alpha1"
+LABEL org.openagentcontainers.version="v1alpha2"
 LABEL org.openagentcontainers.name="minimal-agent"
 
 LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_ADDR"
@@ -791,7 +791,7 @@ CMD ["node", "/app/harness.js"]
 ```dockerfile
 FROM python:3.12-slim
 
-LABEL org.openagentcontainers.version="v1alpha1"
+LABEL org.openagentcontainers.version="v1alpha2"
 LABEL org.openagentcontainers.name="pi-weather"
 
 LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_ADDR"
@@ -852,5 +852,5 @@ to the wrong group.
 
 | Version  | Date       | Summary                                                                                                                                                    |
 | -------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| v1alpha1 | 2026-05-12 | First versioned release. Adopt Kubernetes-style maturity stages; unify spec document version with label version; document graduation path and §8 overhaul. |
-| (draft)  | 2026-05-04 | Initial draft; backported from docs/. Used provisional `v1` label value before versioning scheme was established.                                         |
+| v1alpha2 | 2026-05-12 | Adopt Kubernetes-style maturity stages; unify spec document version with label version; document graduation path and §8 overhaul. |
+| v1alpha1 | 2026-05-04 | Initial draft; backported from docs/.                                                                                            |
