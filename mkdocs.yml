@@ -26,3 +26,5 @@ nav:
   - Overview: index.md
   - Architecture: architecture.md
   - Label reference: reference.md
+  - Full spec: spec.md
+  - Changelog: changelog.md
