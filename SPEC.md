@@ -3,7 +3,7 @@
 # Open Agent Containers Specification
 
 **Status:** Draft
-**Version:** v0.1.0
+**Version:** v0.2.0
 **Authors:** [Brahm Lower](https://github.com/brahmlower) \<email\>
 **Created:** YYYY-MM-DD
 **Last Updated:** 2026-05-04
@@ -125,24 +125,24 @@ as shown here.
 
 ### 2.2 Definitions
 
-| Term | Definition |
-|---|---|
-| **Agent Artifact** | An OCI image conforming to this specification that packages an AI agent and declares its runtime dependencies via labels |
-| **Producer** | An entity that creates and publishes a conformant Agent Artifact (typically a Dockerfile author or CI pipeline) |
-| **Consumer / Orchestrator** | An entity that ingests an Agent Artifact, reads its labels, and provisions the declared dependencies at deploy time |
-| **Harness** | The process inside the container that drives the agent's reasoning loop; must satisfy the runtime interface requirements in §4.3 |
-| **Label Namespace** | The `org.openagentcontainers` prefix under which all OAC labels are declared |
-| **Dependency Declaration** | One or more labels in the Label Namespace that describe a resource the agent requires at runtime |
-| **Event Channel** | A named application-level event stream the agent subscribes to, declared with a schema file embedded in the image |
-| **Schema File** | A file embedded in the image at build time that describes the payload format for an event channel |
-| **Registration** | The one-time process by which an orchestrator inspects an image's labels and extracts cached schema files, prior to any container start |
-| **OCI Image** | A container image conforming to the [OCI Image Format Specification] |
+| Term                        | Definition                                                                                                                              |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent Artifact**          | An OCI image conforming to this specification that packages an AI agent and declares its runtime dependencies via labels                |
+| **Producer**                | An entity that creates and publishes a conformant Agent Artifact (typically a Dockerfile author or CI pipeline)                         |
+| **Consumer / Orchestrator** | An entity that ingests an Agent Artifact, reads its labels, and provisions the declared dependencies at deploy time                     |
+| **Harness**                 | The process inside the container that drives the agent's reasoning loop; must satisfy the runtime interface requirements in §4.3        |
+| **Label Namespace**         | The `org.openagentcontainers` prefix under which all OAC labels are declared                                                            |
+| **Dependency Declaration**  | One or more labels in the Label Namespace that describe a resource the agent requires at runtime                                        |
+| **Event Channel**           | A named application-level event stream the agent subscribes to, declared with a schema file embedded in the image                       |
+| **Schema File**             | A file embedded in the image at build time that describes the payload format for an event channel                                       |
+| **Registration**            | The one-time process by which an orchestrator inspects an image's labels and extracts cached schema files, prior to any container start |
+| **OCI Image**               | A container image conforming to the [OCI Image Format Specification]                                                                    |
 
 ---
 
 ## 3. Relationship to Existing Work
 
-*This section is informative.*
+_This section is informative._
 
 ### 3.1 OCI Image Specification and ORAS
 
@@ -193,16 +193,17 @@ types or custom media types are required at the OCI level.
 A conformant Agent Artifact MUST include the following label:
 
 ```dockerfile
-LABEL org.openagentcontainers.version="v1"
+LABEL org.openagentcontainers.version="v1alpha1"
 ```
 
-This label declares the spec major version the artifact conforms to. The orchestrator reads this
+This label declares the spec version the artifact conforms to. The orchestrator reads this
 label first to determine whether it can process the artifact. The value MUST be a single version
-identifier (e.g., `"v1"`); declaring multiple versions in a single artifact is not permitted.
+identifier (e.g., `"v1alpha1"`); declaring multiple versions in a single artifact is not permitted.
 
-All OAC dependency labels MUST be namespaced under `org.openagentcontainers`. The `org.openagentcontainers.version` label is reserved and MUST NOT be used as a dependency label prefix. Labels outside
-this namespace are not governed by this specification and MUST be ignored by conformant
-orchestrators when performing OAC-specific processing.
+All OAC dependency labels MUST be namespaced under `org.openagentcontainers`. The
+`org.openagentcontainers.version` label is reserved and MUST NOT be used as a dependency label
+prefix. Labels outside this namespace are not governed by this specification and MUST be ignored by
+conformant orchestrators when performing OAC-specific processing.
 
 ### 4.2 Label Conventions
 
@@ -256,9 +257,9 @@ LABEL org.openagentcontainers.name="my-agent"
 The `name` label is REQUIRED. It identifies the agent and is used by the orchestrator to key
 agent-specific configuration (e.g., MCP credential lookups).
 
-| Label | Required | Description |
-|---|---|---|
-| `name` | Yes | Human-readable agent identifier. Used as a key for orchestrator-side config lookups. |
+| Label  | Required | Description                                                                          |
+| ------ | -------- | ------------------------------------------------------------------------------------ |
+| `name` | Yes      | Human-readable agent identifier. Used as a key for orchestrator-side config lookups. |
 
 ### 5.2 Inference
 
@@ -268,10 +269,10 @@ gateway MUST expose an OpenAI-compatible API.
 
 **Connection labels** — REQUIRED if any inference type is declared:
 
-| Label | Required | Description |
-|---|---|---|
+| Label                    | Required    | Description                                                          |
+| ------------------------ | ----------- | -------------------------------------------------------------------- |
 | `inference.api_base.env` | Conditional | Env var name the orchestrator MUST inject the gateway base URL into. |
-| `inference.api_key.env` | Conditional | Env var name the orchestrator MUST inject the API key into. |
+| `inference.api_key.env`  | Conditional | Env var name the orchestrator MUST inject the API key into.          |
 
 Both connection labels MUST be declared together. An image MUST NOT declare one without the other.
 
@@ -283,14 +284,14 @@ org.openagentcontainers.inference.<type>.models="<model-id> [<model-id> ...]"
 
 `<type>` is derived from the OpenAI API endpoint path: strip `/v1/` and replace `/` with `-`.
 
-| Type key | OpenAI endpoint |
-|---|---|
-| `chat-completions` | `POST /v1/chat/completions` |
-| `embeddings` | `POST /v1/embeddings` |
-| `images-generations` | `POST /v1/images/generations` |
-| `audio-speech` | `POST /v1/audio/speech` |
+| Type key               | OpenAI endpoint                 |
+| ---------------------- | ------------------------------- |
+| `chat-completions`     | `POST /v1/chat/completions`     |
+| `embeddings`           | `POST /v1/embeddings`           |
+| `images-generations`   | `POST /v1/images/generations`   |
+| `audio-speech`         | `POST /v1/audio/speech`         |
 | `audio-transcriptions` | `POST /v1/audio/transcriptions` |
-| `moderations` | `POST /v1/moderations` |
+| `moderations`          | `POST /v1/moderations`          |
 
 The value is a space-separated list of model identifiers. The orchestrator MUST validate that all
 listed models are available on the configured gateway before deployment, and MUST fail deployment
@@ -321,27 +322,27 @@ keyed by `<agent-name>/<mcp-name>`. The artifact does not encode infrastructure-
 
 **DCR (Dynamic Client Registration, [RFC 7591]):**
 
-| Label | Description |
-|---|---|
-| `mcp.<name>.dcr.scopes` | Space-separated OAuth scopes to request, per [RFC 6749 §3.3]. |
-| `mcp.<name>.dcr.client_id.env` | Env var name the orchestrator MUST inject the registered client ID into. |
-| `mcp.<name>.dcr.client_id.file` | Path the orchestrator MUST write the registered client ID to. |
-| `mcp.<name>.dcr.client_secret.env` | Env var name the orchestrator MUST inject the registered client secret into. |
-| `mcp.<name>.dcr.client_secret.file` | Path the orchestrator MUST write the registered client secret to. |
+| Label                               | Description                                                                  |
+| ----------------------------------- | ---------------------------------------------------------------------------- |
+| `mcp.<name>.dcr.scopes`             | Space-separated OAuth scopes to request, per [RFC 6749 §3.3].                |
+| `mcp.<name>.dcr.client_id.env`      | Env var name the orchestrator MUST inject the registered client ID into.     |
+| `mcp.<name>.dcr.client_id.file`     | Path the orchestrator MUST write the registered client ID to.                |
+| `mcp.<name>.dcr.client_secret.env`  | Env var name the orchestrator MUST inject the registered client secret into. |
+| `mcp.<name>.dcr.client_secret.file` | Path the orchestrator MUST write the registered client secret to.            |
 
 **OAuth (pre-registered client):**
 
-| Label | Description |
-|---|---|
-| `mcp.<name>.oauth.client_id.env` / `.file` | Where the orchestrator delivers the client ID. |
+| Label                                          | Description                                        |
+| ---------------------------------------------- | -------------------------------------------------- |
+| `mcp.<name>.oauth.client_id.env` / `.file`     | Where the orchestrator delivers the client ID.     |
 | `mcp.<name>.oauth.client_secret.env` / `.file` | Where the orchestrator delivers the client secret. |
 
 **Bearer token:**
 
-| Label | Description |
-|---|---|
-| `mcp.<name>.bearer.token.env` | Env var name the orchestrator MUST inject the token into. |
-| `mcp.<name>.bearer.token.file` | Path the orchestrator MUST write the token to. |
+| Label                          | Description                                               |
+| ------------------------------ | --------------------------------------------------------- |
+| `mcp.<name>.bearer.token.env`  | Env var name the orchestrator MUST inject the token into. |
+| `mcp.<name>.bearer.token.file` | Path the orchestrator MUST write the token to.            |
 
 For each credential, at least one of `.env` or `.file` MUST be declared. Both MAY be declared
 simultaneously, in which case the orchestrator MUST satisfy both.
@@ -350,10 +351,10 @@ simultaneously, in which case the orchestrator MUST satisfy both.
 
 Declares filesystem mounts the agent operates on.
 
-| Label | Required | Description |
-|---|---|---|
-| `workspace.<name>.path` | Yes | Mount path inside the container. |
-| `workspace.<name>.mutable` | No | `"true"` for read-write. Absent or `"false"` for read-only. |
+| Label                      | Required | Description                                                 |
+| -------------------------- | -------- | ----------------------------------------------------------- |
+| `workspace.<name>.path`    | Yes      | Mount path inside the container.                            |
+| `workspace.<name>.mutable` | No       | `"true"` for read-write. Absent or `"false"` for read-only. |
 
 The orchestrator MUST respect the `mutable` constraint: a `mutable=true` workspace MUST be
 mounted read-write; a workspace where `mutable` is absent or `"false"` MUST be mounted read-only.
@@ -363,29 +364,29 @@ An agent MAY declare multiple workspaces.
 
 The `orchestrator` group is REQUIRED. It declares how the harness connects to the orchestrator.
 
-| Label | Required | Description |
-|---|---|---|
-| `orchestrator.env` | Yes | Env var name the orchestrator MUST inject its address into. |
+| Label              | Required | Description                                                 |
+| ------------------ | -------- | ----------------------------------------------------------- |
+| `orchestrator.env` | Yes      | Env var name the orchestrator MUST inject its address into. |
 
 The harness MUST declare at least one auth method. Auth methods follow the same sub-namespace
 pattern as MCP credentials; the orchestrator satisfies one.
 
 **Bearer:**
 
-| Label | Description |
-|---|---|
-| `orchestrator.bearer.token.env` | Env var name the orchestrator MUST inject the token into. |
-| `orchestrator.bearer.token.file` | Path the orchestrator MUST write the token to. |
+| Label                            | Description                                               |
+| -------------------------------- | --------------------------------------------------------- |
+| `orchestrator.bearer.token.env`  | Env var name the orchestrator MUST inject the token into. |
+| `orchestrator.bearer.token.file` | Path the orchestrator MUST write the token to.            |
 
 The harness sends the token as `Authorization: Bearer <token>` on the ConnectRPC stream.
 
 **mTLS:**
 
-| Label | Description |
-|---|---|
-| `orchestrator.mtls.cert.file` | Path the orchestrator MUST write the client certificate (PEM) to. |
-| `orchestrator.mtls.key.file` | Path the orchestrator MUST write the client private key (PEM) to. |
-| `orchestrator.mtls.ca.file` | Path the orchestrator MUST write the orchestrator's CA certificate (PEM) to. |
+| Label                         | Description                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------------- |
+| `orchestrator.mtls.cert.file` | Path the orchestrator MUST write the client certificate (PEM) to.            |
+| `orchestrator.mtls.key.file`  | Path the orchestrator MUST write the client private key (PEM) to.            |
+| `orchestrator.mtls.ca.file`   | Path the orchestrator MUST write the orchestrator's CA certificate (PEM) to. |
 
 The orchestrator acts as the CA, signs a client certificate for the harness at startup, and
 validates that certificate at connection time. No service mesh is required. A service mesh MAY
@@ -401,10 +402,10 @@ Channel names MUST conform to the DNS label format ([RFC 1123]): lowercase alpha
 characters and hyphens, starting with an alphabetic character, ending with an alphanumeric
 character, maximum 63 characters.
 
-| Label | Required | Description |
-|---|---|---|
-| `events.<name>.schema.path` | Yes (per channel) | Path to the schema file within the image. |
-| `events.<name>.schema.mimetype` | Yes (per channel) | MIME type of the schema file. |
+| Label                           | Required          | Description                               |
+| ------------------------------- | ----------------- | ----------------------------------------- |
+| `events.<name>.schema.path`     | Yes (per channel) | Path to the schema file within the image. |
+| `events.<name>.schema.mimetype` | Yes (per channel) | MIME type of the schema file.             |
 
 Both labels are REQUIRED per channel declaration. The schema file MUST be present in the image
 at the declared path at build time.
@@ -433,8 +434,8 @@ Three conformance classes are defined: Producer, Orchestrator, and Harness.
 
 A conformant Producer MUST:
 
-- Include the `org.openagentcontainers.version` label set to the spec major version the artifact
-  targets (e.g., `"v1"`).
+- Include the `org.openagentcontainers.version` label set to the spec version the artifact
+  targets (e.g., `"v1alpha1"`).
 - Include the `org.openagentcontainers.name` label.
 - Include the `org.openagentcontainers.orchestrator.env` label.
 - Declare at least one orchestrator auth method (`orchestrator.bearer.*` or `orchestrator.mtls.*`).
@@ -538,7 +539,22 @@ between Producer and Orchestrator.
 
 A breaking change to the label schema — removing a label, changing its semantics, or changing
 required structure — MUST result in a major version increment of the spec. The current spec
-version is **`v1`**.
+version is **`v1alpha1`**.
+
+The version value encodes both a major version number and a maturity stage:
+
+| Stage       | Example values            | Meaning                                                                                                                     |
+| ----------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Alpha       | `v1alpha1`, `v1alpha2`, … | Experimental. Label schema may change between revisions without notice.                                                     |
+| Beta        | `v1beta1`, `v1beta2`, …   | Feature-complete for the major version. Breaking changes are avoided and announced in advance. Suitable for early adopters. |
+| Stable (GA) | `v1`                      | Stable. Breaking changes require a new major version (`v2alpha1`).                                                          |
+
+The graduation path for a major version is: `v1alpha1` → … → `v1beta1` → … → `v1`.
+A new major version begins at `v2alpha1` and follows the same path.
+
+Alpha and beta revisions within the same major version are distinct version values — an orchestrator
+supporting `v1alpha1` MUST NOT automatically accept `v1alpha2` or `v1beta1`. Each accepted version
+MUST be explicitly declared by the orchestrator.
 
 ### 8.2 Spec Document Versioning
 
@@ -670,7 +686,7 @@ registry fetches across deployments of the same image.
 
 ### 11.1 ModelPack / ModelKit
 
-*Why not just extend ModelPack for agents?*
+_Why not just extend ModelPack for agents?_
 
 ModelPack (TOC initiative #1740) targets model weight bundles — static artifacts that are not
 directly runnable and do not have orchestrator connection requirements. An agent artifact is a
@@ -681,7 +697,7 @@ inference dependency.
 
 ### 11.2 OCI Image Annotations Only (No Embedded Files)
 
-*Why not encode all metadata as OCI annotations without requiring embedded schema files?*
+_Why not encode all metadata as OCI annotations without requiring embedded schema files?_
 
 OCI annotation values are strings with a practical size limit (the OCI spec does not mandate a
 maximum, but registries and runtimes impose one in practice). Event schemas — particularly
@@ -691,7 +707,7 @@ re-tagging without modification.
 
 ### 11.3 Kubernetes Agent CRD as the Primary Interface
 
-*Why not put dependency declarations in the CRD rather than the artifact?*
+_Why not put dependency declarations in the CRD rather than the artifact?_
 
 Putting declarations in a CRD decouples the dependency specification from the artifact. This
 means the same image can be deployed with different declarations — undermining the portability
@@ -702,7 +718,7 @@ orchestrator-side state; the image labels are the right place for artifact-side 
 
 ### 11.4 Structured Config File Inside the Image
 
-*Why labels rather than a JSON/YAML config file baked into the image?*
+_Why labels rather than a JSON/YAML config file baked into the image?_
 
 A structured file inside the image requires either running the container or extracting and
 parsing a file from image layers to discover requirements. OCI image labels are part of the image
@@ -716,41 +732,41 @@ enables orchestrators to read requirements without ever starting a container.
 
 ### 12.1 Normative References
 
-| Label | Reference |
-|---|---|
-| [RFC2119] | Bradner, S. "Key words for use in RFCs to Indicate Requirement Levels." BCP 14, RFC 2119. March 1997. |
-| [RFC8174] | Leiba, B. "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words." BCP 14, RFC 8174. May 2017. |
-| [RFC1123] | Braden, R. "Requirements for Internet Hosts — Application and Support." RFC 1123. October 1989. (§2.1 DNS label format) |
-| [RFC6749] | Hardt, D. "The OAuth 2.0 Authorization Framework." RFC 6749. October 2012. |
-| [RFC7591] | Richer, J. et al. "OAuth 2.0 Dynamic Client Registration Protocol." RFC 7591. July 2015. |
-| [OCI Image Format Specification] | Open Container Initiative. "OCI Image Format Specification." https://github.com/opencontainers/image-spec |
-| [OCI Distribution Specification] | Open Container Initiative. "OCI Distribution Specification." https://github.com/opencontainers/distribution-spec |
+| Label                            | Reference                                                                                                               |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [RFC2119]                        | Bradner, S. "Key words for use in RFCs to Indicate Requirement Levels." BCP 14, RFC 2119. March 1997.                   |
+| [RFC8174]                        | Leiba, B. "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words." BCP 14, RFC 8174. May 2017.                      |
+| [RFC1123]                        | Braden, R. "Requirements for Internet Hosts — Application and Support." RFC 1123. October 1989. (§2.1 DNS label format) |
+| [RFC6749]                        | Hardt, D. "The OAuth 2.0 Authorization Framework." RFC 6749. October 2012.                                              |
+| [RFC7591]                        | Richer, J. et al. "OAuth 2.0 Dynamic Client Registration Protocol." RFC 7591. July 2015.                                |
+| [OCI Image Format Specification] | Open Container Initiative. "OCI Image Format Specification." https://github.com/opencontainers/image-spec               |
+| [OCI Distribution Specification] | Open Container Initiative. "OCI Distribution Specification." https://github.com/opencontainers/distribution-spec        |
 
 ### 12.2 Informative References
 
-| Label | Reference |
-|---|---|
-| [ORAS] | ORAS Project. "OCI Registry as Storage." https://oras.land |
-| [ConnectRPC] | Buf Technologies. "Connect Protocol." https://connectrpc.com |
-| [SemVer] | Preston-Werner, T. "Semantic Versioning 2.0.0." https://semver.org |
-| [TOC #1740] | Caldeira, V. et al. "Cloud Native and OCI Compliant Inner-Loop Tooling & Packaging for AI Engineers." CNCF TOC Issue #1740. https://github.com/cncf/toc/issues/1740 |
-| [TOC #1746] | Caldeira, V. et al. "Cloud-Native Foundations for Distributed Agentic Systems." CNCF TOC Issue #1746. https://github.com/cncf/toc/issues/1746 |
-| [TOC #1749] | Halley, J. et al. "Cloud-Native Agentic Standards Checklist." CNCF TOC Issue #1749. https://github.com/cncf/toc/issues/1749 |
-| [OTel GenAI Agent Spans] | OpenTelemetry. "Semantic Conventions for GenAI Agent Spans." https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/ |
-| [SPIFFE] | SPIFFE Project. "Secure Production Identity Framework for Everyone." https://spiffe.io |
+| Label                    | Reference                                                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [ORAS]                   | ORAS Project. "OCI Registry as Storage." https://oras.land                                                                                                          |
+| [ConnectRPC]             | Buf Technologies. "Connect Protocol." https://connectrpc.com                                                                                                        |
+| [SemVer]                 | Preston-Werner, T. "Semantic Versioning 2.0.0." https://semver.org                                                                                                  |
+| [TOC #1740]              | Caldeira, V. et al. "Cloud Native and OCI Compliant Inner-Loop Tooling & Packaging for AI Engineers." CNCF TOC Issue #1740. https://github.com/cncf/toc/issues/1740 |
+| [TOC #1746]              | Caldeira, V. et al. "Cloud-Native Foundations for Distributed Agentic Systems." CNCF TOC Issue #1746. https://github.com/cncf/toc/issues/1746                       |
+| [TOC #1749]              | Halley, J. et al. "Cloud-Native Agentic Standards Checklist." CNCF TOC Issue #1749. https://github.com/cncf/toc/issues/1749                                         |
+| [OTel GenAI Agent Spans] | OpenTelemetry. "Semantic Conventions for GenAI Agent Spans." https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/                                 |
+| [SPIFFE]                 | SPIFFE Project. "Secure Production Identity Framework for Everyone." https://spiffe.io                                                                              |
 
 ---
 
 ## Appendix A. Examples
 
-*Informative.*
+_Informative._
 
 ### A.1 Minimal Conformant Agent Artifact
 
 ```dockerfile
 FROM node:22-alpine
 
-LABEL org.openagentcontainers.version="v1"
+LABEL org.openagentcontainers.version="v1alpha1"
 LABEL org.openagentcontainers.name="minimal-agent"
 
 LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_ADDR"
@@ -769,7 +785,7 @@ CMD ["node", "/app/harness.js"]
 ```dockerfile
 FROM python:3.12-slim
 
-LABEL org.openagentcontainers.version="v1"
+LABEL org.openagentcontainers.version="v1alpha1"
 LABEL org.openagentcontainers.name="pi-weather"
 
 LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_ADDR"
@@ -801,7 +817,7 @@ CMD ["python", "/app/agent.py"]
 
 ## Appendix B. Implementation Notes
 
-*Informative. Guidance for implementors beyond normative requirements.*
+_Informative. Guidance for implementors beyond normative requirements._
 
 ### B.1 Extracting Schema Files from an Image
 
@@ -828,6 +844,7 @@ to the wrong group.
 
 ## Revision History
 
-| Version | Date | Summary |
-|---|---|---|
-| v0.1.0 | 2026-05-04 | Initial draft; backported from docs/ |
+| Version | Date       | Summary                                                                                                                                                               |
+| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v0.2.0  | 2026-05-12 | Adopt Kubernetes-style version maturity stages (`v1alpha1`/`v1beta1`/`v1`); update label version from `v1` to `v1alpha1`; document maturity stage progression in §8.1 |
+| v0.1.0  | 2026-05-04 | Initial draft; backported from docs/                                                                                                                                  |
