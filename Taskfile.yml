@@ -1,24 +1,23 @@
 version: "3"
 
 tasks:
-  install:
-    desc: Create venv and install dependencies
+  setup:
+    desc: First-time dev setup — sync dependencies with uv
     cmds:
-      - python3 -m venv .venv
-      - .venv/bin/pip install -q -r requirements.txt
+      - uv sync
     generates:
       - .venv/bin/mkdocs
 
   serve:
     desc: Serve the docs locally with live reload
-    deps: [install]
+    deps: [setup]
     cmds:
-      - .venv/bin/mkdocs serve --watch .
+      - uv run mkdocs serve --watch .
 
   build:
     desc: Build the static site to site/
-    deps: [install]
+    deps: [setup]
     cmds:
-      - .venv/bin/mkdocs build
+      - uv run mkdocs build
     generates:
       - site/
