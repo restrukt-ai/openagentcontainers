@@ -25,6 +25,5 @@ extra_css:
 nav:
   - Overview: index.md
   - Label reference: reference.md
-  - Full Spec:
-    - v1alpha2 (current): spec/v1alpha2.md
+  - Full Spec: spec/v1alpha2.md
   - Changelog: changelog.md
