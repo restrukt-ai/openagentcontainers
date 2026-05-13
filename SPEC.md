@@ -43,15 +43,14 @@ and harness-agnostic.
 
 ## Status of This Document
 
-This document is a **DRAFT** specification produced under the CNCF TOC AI Initiatives program. It
-is intended as a **standards-track** document targeting eventual donation to a CNCF TAG or
-subproject.
+This document is a **DRAFT** specification. It is the author's intent to propose this work to
+the CNCF for formal adoption; formal engagement with the CNCF TOC has not yet begun. This
+document does not represent the position of the CNCF TOC or any TAG.
 
 Feedback is solicited via GitHub issues against
 [https://github.com/restrukt-ai/openagentcontainers](https://github.com/restrukt-ai/openagentcontainers).
-This document does not represent the position of the CNCF TOC or any TAG. Implementation
-experience against draft versions is welcomed and will be used to advance the document toward
-acceptance.
+Implementation experience against draft versions is welcomed and will inform the document before
+a CNCF proposal is made.
 
 ---
 
@@ -113,8 +112,7 @@ configuration files or per-agent knowledge hardcoded into the infrastructure.
 - This specification does not define agent composition (language, SDKs, MCP tooling, or skills).
 - This specification does not define agent runtime behavior or execution semantics.
 - This specification does not define a new container runtime or OCI distribution mechanism.
-- This specification does not prescribe inter-agent communication protocols (MCP, A2A, etc.);
-  those are addressed in TOC initiative [#1746].
+- This specification does not prescribe inter-agent communication protocols (MCP, A2A, etc.).
 - This specification does not define model weight packaging; see ModelPack
   ([§11.1](#111-modelpack--modelkit)) for that scope.
 - This specification does not restrict the inference platform used by the orchestrator.
@@ -167,25 +165,18 @@ metadata, and SBOMs. This specification addresses a distinct artifact type — a
 not a model weight bundle — but the two are composable: an Agent Artifact MAY reference a
 ModelPack artifact as an inference dependency.
 
-Overlap areas requiring coordination with #1740 maintainers:
-
-- SBOM annotation format
-- Sigstore/Notary v2 signing conventions
-- OCI manifest annotation key namespacing
-
 ### 3.3 Agent CRD and Runtime Abstraction (TOC Initiative #1746)
 
-[TOC initiative #1746] is developing an Agent CRD schema and lifecycle model for Kubernetes. The
-labels defined in this specification are intended to serve as the artifact-level source of truth
-that an orchestrator reads when instantiating an Agent CRD. The two are complementary: this
-specification defines what the artifact declares; #1746 defines how Kubernetes represents and
-manages the running agent.
+[TOC initiative #1746] is focused on an Agent CRD schema and lifecycle model for Kubernetes.
+OAC labels are intended to serve as the artifact-level source of truth that an orchestrator reads
+when instantiating such a CRD: OAC defines what the artifact declares; a CRD-based system defines
+how Kubernetes represents and manages the running agent.
 
 ### 3.4 Cloud-Native Agentic Standards Checklist (TOC Initiative #1749)
 
-[TOC initiative #1749] establishes container and observability best practices for agentic systems.
-This specification's Security Considerations and Operational Considerations sections are aligned
-with the checklist's recommendations, particularly the agent identity and observability guidance.
+[TOC initiative #1749] is defining container and observability best practices for agentic systems.
+The Security Considerations and Operational Considerations sections of this specification are
+informed by that scope.
 
 ---
 
@@ -539,14 +530,12 @@ version value declared in the artifact and the versions the orchestrator support
 
 ### 8.1 Versioning via the Version Label
 
-The spec version is declared solely via the `org.openagentcontainers.version` label (§4.1).
-The dependency label namespace (`org.openagentcontainers.*`) is unversioned — it does not
-encode the spec version. The version label is the authoritative mechanism for negotiation
-between Producer and Orchestrator.
+The spec version is declared via the `org.openagentcontainers.version` label (§4.1) and is the
+authoritative mechanism for spec version negotiation between Producer and Orchestrator.
 
 A breaking change to the label schema — removing a label, changing its semantics, or changing
 required structure — MUST result in a major version increment of the spec. The current spec
-version is **`v1alpha2`**.
+version is `v1alpha2`.
 
 The version value encodes both a major version number and a maturity stage:
 
@@ -563,21 +552,7 @@ Alpha and beta revisions within the same major version are distinct version valu
 supporting `v1alpha1` MUST NOT automatically accept `v1alpha2` or `v1beta1`. Each accepted version
 MUST be explicitly declared by the orchestrator.
 
-### 8.2 Spec Document Versioning
-
-The spec document version is the same as the label version defined in §8.1. The document version
-and the `org.openagentcontainers.version` label value always agree — there is no separate document
-versioning scheme.
-
-Changes to the spec document are classified as follows:
-
-- **New alpha or beta revision** (e.g., `v1alpha1` → `v1alpha2`): any change to normative
-  requirements, label schema, or conformance rules — whether breaking or additive.
-- **Stage graduation** (e.g., `v1beta1` → `v1`): the spec is declared stable for the major
-  version; no normative changes accompany graduation.
-- **New major version** (e.g., `v1` → `v2alpha1`): breaking change to the label schema.
-
-### 8.3 Artifact Version Negotiation
+### 8.2 Artifact Version Negotiation
 
 A conformant orchestrator determines the spec version of an artifact by reading the explicit
 `org.openagentcontainers.version` label (§4.1). This label is the sole source of truth for
@@ -591,16 +566,16 @@ alongside old-version labels in the same image.
 If the declared version is not supported by the orchestrator, deployment MUST fail (§7.6). There
 is no fallback or degraded-mode behavior for version mismatches.
 
-### 8.4 Deprecation Policy
+### 8.3 Deprecation Policy
 
 A label is deprecated when a preferred replacement is introduced. Deprecated labels MUST remain
-supported for at least **one minor version AND six months** after the minor version that introduced
+supported for at least **one spec revision AND six months** after the revision that introduced
 the deprecation — whichever is longer. Deprecated labels are removed only at a major version
-increment, which also produces a new label namespace.
+increment.
 
-The spec document marks deprecated labels in the label reference tables with a "Deprecated since
-vX.Y" annotation. The deprecating minor version's changelog MUST identify the deprecated label
-and its replacement.
+The spec document marks deprecated labels in the label reference tables with a "Deprecated in
+`<version>`" annotation. The changelog for the deprecating revision MUST identify the deprecated
+label and its replacement.
 
 A conformant orchestrator SHOULD emit a warning at registration time when it encounters a label
 documented as deprecated in the declared spec version. The warning MUST identify the deprecated
@@ -626,13 +601,7 @@ orchestrator. The spec does not define a machine-readable deprecation signal in 
 
 Orchestrators SHOULD verify image signatures before reading labels or extracting schema files.
 Producers SHOULD sign Agent Artifacts using Sigstore or Notary v2 and include an SBOM as an OCI
-referrer. Alignment with the signing conventions established in TOC initiative [#1740] is
-RECOMMENDED.
-
-<!--
-  Expand with specific annotation keys for signature verification
-  once aligned with #1740 maintainers.
--->
+referrer.
 
 ### 9.3 Dependency Trust
 
@@ -658,8 +627,6 @@ Kubernetes ServiceAccount token) scoped to its runtime lifetime. The orchestrato
 (§5.5) is one mechanism for per-instance identity; orchestrators SHOULD issue short-lived,
 automatically rotated credentials tied to container lifetime rather than static tokens.
 
-See TOC initiative [#1749] §Agent Identity for additional guidance.
-
 ---
 
 ## 10. Operational Considerations
@@ -670,9 +637,6 @@ Agent containers participate in existing observability pipelines. Orchestrators 
 OpenTelemetry spans for the registration and startup lifecycle phases, keyed by agent name and
 image digest. Harness implementors SHOULD follow the [OTel GenAI Agent Spans] semantic
 conventions for agent-level traces.
-
-See TOC initiative [#1749] §Observability for a checklist of recommended metrics and trace
-attributes for agentic systems.
 
 ### 10.2 Registry Compatibility
 
@@ -726,8 +690,8 @@ Putting declarations in a CRD decouples the dependency specification from the ar
 means the same image can be deployed with different declarations — undermining the portability
 goal. It also requires out-of-band CRD authorship for every agent deployment. Labels in the
 image make the artifact self-describing: any compliant orchestrator can deploy it without
-additional configuration. The CRD (TOC initiative #1746) is the right place for
-orchestrator-side state; the image labels are the right place for artifact-side declarations.
+additional configuration. A CRD-based system is the right place for orchestrator-side state; the image labels are the right
+place for artifact-side declarations.
 
 ### 11.4 Structured Config File Inside the Image
 
