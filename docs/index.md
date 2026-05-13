@@ -1,8 +1,7 @@
 # Open Agent Containers
 
 Every AI agent deployment requires the same manual work: wire up an inference endpoint, inject
-credentials, mount storage, configure the orchestrator connection. **Open Agent Containers** (OAC)
-eliminate that work. An OAC is a Docker image that declares its own runtime requirements as OCI
+credentials, mount storage. **Open Agent Containers** (OAC) eliminate that work. An OAC is a Docker image that declares its own runtime requirements as OCI
 labels — a compliant orchestrator reads those labels and provisions everything automatically,
 in any environment, without per-agent configuration outside the image.
 
