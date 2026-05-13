@@ -1,5 +1,7 @@
 version: "3"
 
+dotenv: [".env"]
+
 tasks:
   setup:
     desc: First-time dev setup — sync dependencies with uv
@@ -21,3 +23,15 @@ tasks:
       - uv run mkdocs build
     generates:
       - site/
+
+  deploy:preview:
+    desc: Build and deploy to Firebase preview channel
+    cmds:
+      - task: build
+      - firebase hosting:channel:deploy preview --project $FIREBASE_PROJECT
+
+  deploy:production:
+    desc: Build and deploy to Firebase production hosting
+    cmds:
+      - task: build
+      - firebase deploy --only hosting --project $FIREBASE_PROJECT
