@@ -3,21 +3,28 @@
 # Open Agent Containers Specification
 
 **Status:** Draft
+
 **Version:** v1alpha2
-**Authors:** [Brahm Lower](https://github.com/brahmlower) \<email\>
-**Created:** YYYY-MM-DD
+
+**Authors:** [Brahm Lower](https://github.com/brahmlower) ([brahm@restrukt.ai](mailto:brahm@restrukt.ai))
+
+**Created:** 2026-04-03
+
 **Last Updated:** 2026-05-12
 
-**CNCF TAG:** [TAG Workloads Foundation](https://github.com/cncf/toc/tree/main/tags/tag-workloads-foundation)
-**Secondary TAG:** [TAG Developer Experience](https://github.com/cncf/toc/tree/main/tags/tag-developer-experience)
-**Related Initiatives:**
+# **CNCF TAG:** [TAG Workloads Foundation](https://github.com/cncf/toc/tree/main/tags/tag-workloads-foundation)
 
-- [#1740 Cloud Native and OCI Compliant Inner-Loop Tooling & Packaging for AI Engineers](https://github.com/cncf/toc/issues/1740)
-- [#1746 Cloud-Native Foundations for Distributed Agentic Systems](https://github.com/cncf/toc/issues/1746)
-- [#1749 Cloud-Native Agentic Standards Checklist](https://github.com/cncf/toc/issues/1749)
+# **Secondary TAG:** [TAG Developer Experience](https://github.com/cncf/toc/tree/main/tags/tag-developer-experience)
 
-**TOC Liaison:** _(assigned at acceptance)_
-**CNAI WG Slack:** [`#wg-artificial-intelligence`](https://cloud-native.slack.com/archives/...) on CNCF Slack
+# **Related Initiatives:**
+
+# - [#1740 Cloud Native and OCI Compliant Inner-Loop Tooling & Packaging for AI Engineers](https://github.com/cncf/toc/issues/1740)
+# - [#1746 Cloud-Native Foundations for Distributed Agentic Systems](https://github.com/cncf/toc/issues/1746)
+# - [#1749 Cloud-Native Agentic Standards Checklist](https://github.com/cncf/toc/issues/1749)
+
+# **TOC Liaison:** _(assigned at acceptance)_
+
+# **CNAI WG Slack:** [`#wg-artificial-intelligence`](https://cloud-native.slack.com/archives/...) on CNCF Slack
 
 ---
 
@@ -41,7 +48,7 @@ is intended as a **standards-track** document targeting eventual donation to a C
 subproject.
 
 Feedback is solicited via GitHub issues against
-[https://github.com/brahmlower/openagentcontainers](https://github.com/brahmlower/openagentcontainers).
+[https://github.com/restrukt-ai/openagentcontainers](https://github.com/restrukt-ai/openagentcontainers).
 This document does not represent the position of the CNCF TOC or any TAG. Implementation
 experience against draft versions is welcomed and will be used to advance the document toward
 acceptance.
@@ -428,11 +435,11 @@ starts.
 
 ## 6. Conformance
 
-Three conformance classes are defined: Producer, Orchestrator, and Harness.
+Three conformance classes are defined: Container, Orchestrator, and Harness.
 
-### 6.1 Producer Conformance
+### 6.1 Container Conformance
 
-A conformant Producer MUST:
+A conformant Container MUST:
 
 - Include the `org.openagentcontainers.version` label set to the spec version the artifact
   targets (e.g., `"v1alpha2"`).
