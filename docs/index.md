@@ -21,44 +21,31 @@ extensions, tooling). The labels describe the agent's interface with the outside
 
 All labels are namespaced under `org.openagentcontainers`.
 
-## Example
+A docker image can declare itself to be an OAC compliant container by declaring its agent name and
+spec version. See the [label reference](reference.md) for all available labels.
 
 ```dockerfile
 FROM node:25-alpine3.22
 
 LABEL org.openagentcontainers.version="v1alpha2"
 LABEL org.openagentcontainers.name="pi-weather"
-LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
-LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
-LABEL org.openagentcontainers.inference.chat-completions.models="llama3.2"
-
-RUN npm install -g @mariozechner/pi-coding-agent
-# ... rest of build
 ```
 
-This agent has no workspace (it doesn't operate on files) and no external MCP servers (the weather
-tool is implemented as a native extension inside the image).
-
-## Inspecting Labels
+Labels can be inspected without pulling the image:
 
 ```bash
-# on a local image
+# local image
 docker image inspect pi-weather --format '{{json .Config.Labels}}' | jq
 
-# on a remote image (no pull required)
+# remote image
 docker manifest inspect ghcr.io/org/pi-weather:latest
 ```
 
-Infrastructure reading labels at runtime should prefix-scan for `org.openagentcontainers.` and
-parse the structured fields from the flat key hierarchy.
-
 ## What the Spec Does Not Cover
 
-The following are intentionally left to the runtime harness inside the image:
+The following are left to the runtime harness inside the image:
 
-- **Prompt / system prompt** — an implementation detail of the harness, not observable from outside the image.
-- **Skills and tools** — internal to the harness.
-- **MCP server configuration** — how servers are launched or connected to is handled entirely by the harness. Labels only appear for MCPs that require OAuth credential negotiation.
-- **Event payload format** — the harness owns serialization and deserialization of event payloads. The spec declares event channel schemas so the orchestrator can configure transformation, but the wire format between orchestrator and harness is an implementation concern.
-
-See the [label reference](reference.md) for detailed documentation of every label.
+- **Prompt / system prompt**
+- **Skills and tools**
+- **MCP server configuration** — labels only cover credential negotiation, not how servers are launched or connected.
+- **Event payload format** — the spec declares schemas for orchestrator-side transformation; wire format is an implementation concern.
