@@ -3,7 +3,7 @@
 # Open Agent Containers Specification
 
 **Status:** Draft
-**Version:** v0.2.0
+**Version:** v1alpha1
 **Authors:** [Brahm Lower](https://github.com/brahmlower) \<email\>
 **Created:** YYYY-MM-DD
 **Last Updated:** 2026-05-04
@@ -558,11 +558,17 @@ MUST be explicitly declared by the orchestrator.
 
 ### 8.2 Spec Document Versioning
 
-This specification document uses [Semantic Versioning 2.0.0]:
+The spec document version is the same as the label version defined in §8.1. The document version
+and the `org.openagentcontainers.version` label value always agree — there is no separate document
+versioning scheme.
 
-- **MAJOR**: breaking change to label schema (triggers label namespace version increment).
-- **MINOR**: backwards-compatible addition (new optional label groups or values).
-- **PATCH**: clarification, editorial fix, or example update with no behavioral change.
+Changes to the spec document are classified as follows:
+
+- **New alpha or beta revision** (e.g., `v1alpha1` → `v1alpha2`): any change to normative
+  requirements, label schema, or conformance rules — whether breaking or additive.
+- **Stage graduation** (e.g., `v1beta1` → `v1`): the spec is declared stable for the major
+  version; no normative changes accompany graduation.
+- **New major version** (e.g., `v1` → `v2alpha1`): breaking change to the label schema.
 
 ### 8.3 Artifact Version Negotiation
 
@@ -844,7 +850,7 @@ to the wrong group.
 
 ## Revision History
 
-| Version | Date       | Summary                                                                                                                                                               |
-| ------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| v0.2.0  | 2026-05-12 | Adopt Kubernetes-style version maturity stages (`v1alpha1`/`v1beta1`/`v1`); update label version from `v1` to `v1alpha1`; document maturity stage progression in §8.1 |
-| v0.1.0  | 2026-05-04 | Initial draft; backported from docs/                                                                                                                                  |
+| Version  | Date       | Summary                                                                                                                                                    |
+| -------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v1alpha1 | 2026-05-12 | First versioned release. Adopt Kubernetes-style maturity stages; unify spec document version with label version; document graduation path and §8 overhaul. |
+| (draft)  | 2026-05-04 | Initial draft; backported from docs/. Used provisional `v1` label value before versioning scheme was established.                                         |
