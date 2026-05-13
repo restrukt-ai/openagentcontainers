@@ -517,7 +517,8 @@ authoritative mechanism for spec version negotiation between Producer and Orches
 A breaking change to the label schema — removing a label, changing its semantics, or changing
 required structure — requires a major version increment. The current spec version is `v1alpha2`.
 
-The version value encodes both a major version number and a maturity stage:
+The version value encodes both a major version number and a maturity stage, following the
+convention established by the Kubernetes API ([K8s API Versioning], [K8s API Conventions]):
 
 | Stage       | Example values            | Meaning                                                                                                                     |
 | ----------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -704,7 +705,8 @@ enables orchestrators to read requirements without ever starting a container.
 | Label                    | Reference                                                                                                                                                           |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [ConnectRPC]             | Buf Technologies. "Connect Protocol." https://connectrpc.com                                                                                                        |
-| [SemVer]                 | Preston-Werner, T. "Semantic Versioning 2.0.0." https://semver.org                                                                                                  |
+| [K8s API Versioning]     | Kubernetes Project. "Kubernetes API versioning." https://kubernetes.io/docs/reference/using-api/#api-versioning                                                     |
+| [K8s API Conventions]    | Kubernetes SIG Architecture. "Kubernetes API Conventions." https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md |
 | [TOC #1740]              | Caldeira, V. et al. "Cloud Native and OCI Compliant Inner-Loop Tooling & Packaging for AI Engineers." CNCF TOC Issue #1740. https://github.com/cncf/toc/issues/1740 |
 | [TOC #1746]              | Caldeira, V. et al. "Cloud-Native Foundations for Distributed Agentic Systems." CNCF TOC Issue #1746. https://github.com/cncf/toc/issues/1746                       |
 | [TOC #1749]              | Halley, J. et al. "Cloud-Native Agentic Standards Checklist." CNCF TOC Issue #1749. https://github.com/cncf/toc/issues/1749                                         |
