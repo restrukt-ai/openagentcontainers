@@ -263,3 +263,28 @@ The orchestrator inspects the image once at registration time:
 
 The orchestrator uses these cached schemas to configure event transformation — mapping incoming
 receiver payloads to the format the harness expects — before the agent starts.
+
+---
+
+## Session
+
+Declares how the harness manages concurrent sessions. If absent, the orchestrator assumes
+single-session mode.
+
+| Label | Description |
+|---|---|
+| `session.isolation` | `"true"` if the harness handles multiple concurrent sessions in one process. Absent or `"false"` for single-session (one container per session). |
+
+```dockerfile
+LABEL org.openagentcontainers.session.isolation="true"
+```
+
+When `isolation` is `"true"`, the orchestrator deploys the container as a long-running service
+and routes sessions via a standard load balancer — no session affinity required. The harness is
+responsible for demultiplexing concurrent sessions using the `session_id` field carried on every
+stream message.
+
+When `isolation` is absent or `"false"`, the orchestrator starts one container per session and
+terminates it when the session ends.
+
+MUST NOT be declared alongside any `workspace.*` labels.

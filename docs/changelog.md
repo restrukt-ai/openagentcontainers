@@ -4,6 +4,30 @@ All notable changes to the OAC specification are documented here.
 
 ---
 
+## v1alpha2 — 2026-05-20
+
+### Added
+
+- **Session isolation** (`session.isolation` label, §5.7). Declares whether the harness handles
+  multiple concurrent sessions in a single process. When `"true"`, the orchestrator deploys the
+  container as a long-running service; when absent or `"false"`, one container instance is started
+  per session.
+
+- **Stream message schema** (§4.5). A normative protobuf schema for the ConnectRPC stream between
+  harness and orchestrator, with `HarnessEnvelope`, `OrchestratorEnvelope`, `Event`,
+  `SessionEnd`, and `EventResult` messages.
+
+- **`session_id` field on stream messages.** Every message on the stream MUST carry a non-empty
+  `session_id`. Harnessess declaring `session.isolation="true"` MUST demultiplex concurrent
+  sessions using this field.
+
+- **Workspace/session conflict error condition** (§7.5). Orchestrators MUST fail deployment if
+  `session.isolation="true"` and any `workspace.*` labels are declared together.
+
+- **`session` label group** added to the label group enumeration (§4.2).
+
+---
+
 ## v1alpha2 — 2026-05-12
 
 ### Changed

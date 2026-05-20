@@ -127,6 +127,7 @@ as shown here.
 | **Event Channel**           | A named application-level event stream the agent subscribes to, declared with a schema file embedded in the image                       |
 | **Schema File**             | A file embedded in the image at build time that describes the payload format for an event channel                                       |
 | **Registration**            | The one-time process by which an orchestrator inspects an image's labels and extracts cached schema files, prior to any container start |
+| **Session**                 | A named lineage of events exchanged between the orchestrator and a harness instance, representing a single conversation or task thread. Each session is identified by a unique session ID assigned by the orchestrator. |
 | **OCI Image**               | A container image conforming to the [OCI Image Format Specification]                                                                    |
 
 ---
@@ -193,7 +194,7 @@ Label keys follow a hierarchical dot-separated structure:
 org.openagentcontainers.<group>[.<name>].<attribute>[.<sub-attribute>]
 ```
 
-Where `<group>` is one of: `name`, `inference`, `mcp`, `workspace`, `orchestrator`, `events`.
+Where `<group>` is one of: `name`, `inference`, `mcp`, `workspace`, `orchestrator`, `events`, `session`.
 
 Label values are UTF-8 strings. Where a label accepts multiple values, they are
 space-separated within a single string. Where a label references an environment variable
@@ -223,6 +224,65 @@ harnesses MUST support at least one of the Connect, gRPC, or gRPC-Web protocols.
 
 **Event schema files** — If the image declares event subscriptions (§5.5), each schema file MUST
 be present in the image at its declared path at build time.
+
+**Stream message format** — All messages exchanged on the ConnectRPC stream MUST conform to the
+protobuf schema defined in §4.5. Every message MUST include a non-empty `session_id` field
+identifying the session the message belongs to. Session IDs are assigned by the orchestrator;
+their format is opaque to the harness.
+
+---
+
+### 4.5 Stream Message Schema
+
+The ConnectRPC stream between harness and orchestrator uses the following protobuf schema. This
+schema is normative.
+
+```protobuf
+syntax = "proto3";
+
+package openagentcontainers.v1alpha2;
+
+service Orchestrator {
+  // Bidirectional stream initiated by the harness at startup.
+  rpc Connect(stream HarnessEnvelope) returns (stream OrchestratorEnvelope);
+}
+
+// Messages sent from the harness to the orchestrator.
+message HarnessEnvelope {
+  string session_id = 1;
+
+  oneof body {
+    EventResult result = 2;
+  }
+}
+
+// Messages sent from the orchestrator to the harness.
+message OrchestratorEnvelope {
+  string session_id = 1;
+
+  oneof body {
+    Event event = 2;
+    SessionEnd session_end = 3;
+  }
+}
+
+// An event delivered from a declared subscription channel.
+message Event {
+  string channel = 1;
+  bytes payload = 2;
+  string content_type = 3;
+}
+
+// Signals that a session has ended. Sent by the orchestrator.
+// The harness MUST release any session-scoped resources upon receipt.
+message SessionEnd {}
+
+// Sent by the harness after processing an event.
+message EventResult {
+  bool success = 1;
+  string error_message = 2; // Non-empty if success is false.
+}
+```
 
 ---
 
@@ -403,6 +463,29 @@ The orchestrator inspects the image once at registration time (not at every cold
 The orchestrator uses these cached schemas to configure event transformation before the agent
 starts.
 
+### 5.7 Session
+
+Declares how the harness manages concurrent sessions. A session (§2.2) is a lineage of events
+exchanged between the orchestrator and a harness instance.
+
+| Label               | Required | Description                                                                                                                                 |
+| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session.isolation` | No       | `"true"` if the harness handles multiple concurrent sessions in one process. Absent or `"false"` means one container per session. Default: `"false"`. |
+
+When `session.isolation` is absent or `"false"`, the orchestrator starts one container instance
+per session and manages its lifetime accordingly — the container runs for the duration of the
+session.
+
+When `session.isolation` is `"true"`, the harness is presumed stateless with respect to session
+management. The orchestrator deploys the container as a long-running service and routes sessions
+to instances via a standard reverse proxy or load balancer; no session affinity is required. The
+harness MUST demultiplex concurrent sessions using the `session_id` field on stream messages
+(§4.5).
+
+```dockerfile
+LABEL org.openagentcontainers.session.isolation="true"
+```
+
 ---
 
 ## 6. Conformance
@@ -424,6 +507,7 @@ A conformant Container MUST:
 - Ensure all declared schema files are present in the image at their declared paths at build time.
 - Use valid DNS label names ([RFC 1123]) for event channel names.
 - Not declare inference types the harness does not use.
+- If declaring `session.isolation="true"`, MUST NOT declare any `workspace.*` labels.
 
 ### 6.2 Orchestrator Conformance
 
@@ -446,6 +530,8 @@ A conformant Orchestrator MUST:
 - Satisfy at least one declared orchestrator auth method.
 - Extract declared schema files from the image without running the container.
 - Cache schema files keyed by channel name at registration time.
+- Deploy containers declaring `session.isolation="true"` as long-running services; MUST NOT start a new container instance per session.
+- Start one container instance per session for containers where `session.isolation` is absent or `"false"`; terminate the instance when the session ends.
 
 A conformant Orchestrator MAY:
 
@@ -461,6 +547,8 @@ A conformant Harness MUST:
 - Authenticate the stream using the injected credentials if an auth method is declared.
 - Support at least one of the Connect, gRPC, or gRPC-Web protocols.
 - Not use inference types that are not declared in the image labels.
+- Include a non-empty `session_id` in every message sent on the stream.
+- When `session.isolation="true"` is declared, correctly demultiplex concurrent sessions using the `session_id` field on inbound messages.
 
 Implementations MAY claim partial conformance only with respect to a named conformance class and
 MUST NOT claim full conformance unless all normative requirements of that class are satisfied.
@@ -493,12 +581,17 @@ If an image declares orchestrator or MCP auth methods that the orchestrator cann
 declares only `mtls.*` but the orchestrator is not configured as a CA), the orchestrator MUST
 fail deployment with a diagnostic indicating which auth method could not be satisfied.
 
-### 7.5 Unknown Labels
+### 7.5 Workspace and Session Isolation Conflict
+
+If a container declares `session.isolation="true"` alongside any `workspace.*` labels, the
+orchestrator MUST fail deployment with a diagnostic identifying the conflicting labels.
+
+### 7.6 Unknown Labels
 
 A conformant Orchestrator MUST ignore labels under `org.openagentcontainers` that it does not
 recognize. Unknown labels MUST NOT cause deployment failure.
 
-### 7.6 Unsupported Spec Version
+### 7.7 Unsupported Spec Version
 
 If `org.openagentcontainers.version` declares a version the orchestrator does not support, the
 orchestrator MUST fail deployment. It MUST NOT attempt to process the artifact's dependency labels
@@ -804,5 +897,6 @@ to the wrong group.
 
 | Version  | Date       | Summary                                                                                                                           |
 | -------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| v1alpha2 | 2026-05-20 | Add session isolation: `session.isolation` label (§5.7), `session_id` field on stream messages, protobuf schema (§4.5), and workspace/session conflict error condition (§7.5). |
 | v1alpha2 | 2026-05-12 | Adopt Kubernetes-style maturity stages; unify spec document version with label version; document graduation path and §8 overhaul. |
 | v1alpha1 | 2026-05-04 | Initial draft; backported from docs/.                                                                                             |
