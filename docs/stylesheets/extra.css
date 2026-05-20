@@ -456,6 +456,7 @@ label.md-search__icon.md-icon svg {
   flex: 1; /* fill remaining grid width (md-grid is a flex container) */
   display: flex;
   align-items: center;
+  justify-content: space-between;
   border: 1px solid var(--oac-border);
   box-shadow: 2px 2px 0 var(--oac-shadow);
   background: var(--oac-white);
