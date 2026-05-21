@@ -14,7 +14,7 @@ tasks:
     desc: Serve the docs locally with live reload
     deps: [setup]
     cmds:
-      - uv run mkdocs serve --watch .
+      - uv run mkdocs serve --dev-addr localhost:8889 --watch .
 
   build:
     desc: Build the static site to site/
