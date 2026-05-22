@@ -1,6 +1,7 @@
 site_name: Open Agent Containers
 site_description: Specification for the Open Agent Containers standard
 docs_dir: docs
+site_dir: dist
 
 theme:
   name: material
