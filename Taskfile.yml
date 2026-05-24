@@ -7,6 +7,11 @@ includes:
   pkg: ./pkg/Taskfile.yml
 
 tasks:
+  docs:
+    desc: Serve Go package docs locally via pkgsite
+    cmds:
+      - pkgsite .
+
   setup:
     desc: First-time dev setup — sync dependencies with uv
     dir: spec-site
