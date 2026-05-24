@@ -1,37 +1,46 @@
 version: "3"
 
-dotenv: [".env"]
+dotenv: ["spec-site/.env"]
+
+includes:
+  cli: ./cli/Taskfile.yml
+  pkg: ./pkg/Taskfile.yml
 
 tasks:
   setup:
     desc: First-time dev setup — sync dependencies with uv
+    dir: spec-site
     cmds:
       - uv sync
     generates:
-      - .venv/bin/mkdocs
+      - spec-site/.venv/bin/mkdocs
 
   serve:
     desc: Serve the docs locally with live reload
+    dir: spec-site
     deps: [setup]
     cmds:
       - uv run mkdocs serve --dev-addr localhost:8889 --watch .
 
   build:
-    desc: Build the static site to site/
+    desc: Build the static site to spec-site/dist/
+    dir: spec-site
     deps: [setup]
     cmds:
       - uv run mkdocs build
     generates:
-      - site/
+      - spec-site/dist/
 
   deploy:preview:
     desc: Build and deploy to Firebase preview channel
+    dir: spec-site
     cmds:
       - task: build
       - firebase hosting:channel:deploy preview --project $FIREBASE_PROJECT
 
   deploy:production:
     desc: Build and deploy to Firebase production hosting
+    dir: spec-site
     cmds:
       - task: build
       - firebase deploy --only hosting --project $FIREBASE_PROJECT

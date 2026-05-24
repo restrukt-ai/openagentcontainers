@@ -1,0 +1,22 @@
+version: 2
+workdir: .
+allow:
+  depOnAnyVendor: false
+components:
+  oac:
+    in: oac
+  discovery:
+    in: discovery
+  search:
+    in: search
+deps:
+  oac:
+    anyVendorDeps: true
+  discovery:
+    anyVendorDeps: true
+    mayDependOn:
+      - oac
+  search:
+    anyVendorDeps: true
+    mayDependOn:
+      - discovery

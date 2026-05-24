@@ -1,5 +1,9 @@
-.venv/
-dist/
+spec-site/.venv/
+spec-site/dist/
+spec-site/.firebase/
+spec-site/.firebaserc
+spec-site/.env
 .firebase/
-.firebaserc
-.env
+cli/bin/
+cli/.task/
+cli/node_modules/

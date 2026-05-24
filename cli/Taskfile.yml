@@ -1,0 +1,59 @@
+version: "3"
+
+tasks:
+  build:
+    desc: Build the oac binary
+    cmds:
+      - go build -o bin/oac ./cmd/oac
+    sources:
+      - cmd/oac/**/*.go
+      - cmd/internal/**/*.go
+    generates:
+      - bin/oac
+
+  lint:
+    desc: Run all lints
+    cmds:
+      - task: lint:golangci-lint
+      - task: lint:govulncheck
+      - task: lint:nilaway
+
+  lint:golangci-lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint config verify
+      - golangci-lint fmt ./...
+      - golangci-lint run --fix --max-same-issues 50 ./...
+      - git add -u .
+
+  lint:govulncheck:
+    desc: Check for dependency vulnerabilities
+    cmds:
+      - govulncheck ./...
+
+  lint:nilaway:
+    desc: Run nil safety analysis
+    cmds:
+      - nilaway ./...
+
+  test:
+    desc: Run tests with race detector
+    cmds:
+      - go test -race ./...
+
+  tidy:
+    desc: Tidy go.mod and go.sum
+    cmds:
+      - go mod tidy
+
+  tidy:check:
+    desc: Verify go.mod and go.sum are tidy (no modifications)
+    cmds:
+      - go mod tidy
+      - git diff --exit-code -- go.mod go.sum
+
+  run:
+    desc: Run oac (pass args with -- e.g. task run -- discover localhost:5000)
+    deps: [build]
+    cmds:
+      - bin/oac {{.CLI_ARGS}}

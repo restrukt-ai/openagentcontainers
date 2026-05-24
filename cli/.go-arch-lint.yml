@@ -1,0 +1,16 @@
+version: 2
+workdir: .
+allow:
+  depOnAnyVendor: false
+components:
+  cmd/oac:
+    in: cmd/oac
+  cmd/internal/scancache:
+    in: cmd/internal/scancache
+deps:
+  cmd/internal/scancache:
+    anyVendorDeps: true
+  cmd/oac:
+    anyVendorDeps: true
+    mayDependOn:
+      - cmd/internal/scancache
