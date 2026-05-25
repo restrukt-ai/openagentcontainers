@@ -1,4 +1,4 @@
-module github.com/restrukt-ai/openagentcontainers
+module github.com/restrukt-ai/openagentcontainers/pkg
 
 go 1.26.3
 

@@ -12,8 +12,8 @@ import (
 	"golang.org/x/time/rate"
 
 	"github.com/restrukt-ai/openagentcontainers/cli/cmd/internal/scancache"
-	"github.com/restrukt-ai/openagentcontainers/discovery"
-	"github.com/restrukt-ai/openagentcontainers/search"
+	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
+	"github.com/restrukt-ai/openagentcontainers/pkg/search"
 )
 
 const (

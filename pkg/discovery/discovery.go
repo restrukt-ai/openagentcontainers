@@ -10,7 +10,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	"golang.org/x/time/rate"
 
-	"github.com/restrukt-ai/openagentcontainers/oac"
+	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
 // Cache is the interface for registry scan caches consumed by Discover.

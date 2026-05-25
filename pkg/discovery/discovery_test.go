@@ -18,8 +18,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/time/rate"
 
-	"github.com/restrukt-ai/openagentcontainers/discovery"
-	"github.com/restrukt-ai/openagentcontainers/oac"
+	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
+	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
 // testRegistry starts an in-memory OCI registry and returns its host and crane options.

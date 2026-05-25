@@ -5,7 +5,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/restrukt-ai/openagentcontainers/discovery"
+	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
 )
 
 // Search discovers all OAC-conformant images in registry and returns those

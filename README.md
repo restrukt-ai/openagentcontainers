@@ -48,7 +48,7 @@ is required.
 ## Go Library (`pkg/`)
 
 ```
-github.com/restrukt-ai/openagentcontainers
+github.com/restrukt-ai/openagentcontainers/pkg
 ```
 
 Three packages:

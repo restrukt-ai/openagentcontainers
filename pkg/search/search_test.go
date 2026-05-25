@@ -4,8 +4,8 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/restrukt-ai/openagentcontainers/discovery"
-	"github.com/restrukt-ai/openagentcontainers/oac"
+	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
+	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
 const agentSQLAnalyst = "sql-analyst"

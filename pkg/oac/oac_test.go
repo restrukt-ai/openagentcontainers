@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/restrukt-ai/openagentcontainers/oac"
+	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
 func TestParse_V1Alpha2_BasicFields(t *testing.T) {
