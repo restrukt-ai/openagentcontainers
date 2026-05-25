@@ -7,7 +7,7 @@ import "fmt"
 const (
 	LabelVersion     = "org.openagentcontainers.version"
 	LabelName        = "org.openagentcontainers.name"
-	LabelDescription = "org.openagentcontainers.description"
+	LabelDescription = "org.openagentcontainers.description" // unofficial extension; not in spec
 	labelPrefix      = "org.openagentcontainers."
 
 	VersionV1Alpha1 = "v1alpha1"
@@ -21,26 +21,32 @@ type Manifest struct {
 	V1Alpha2 *V1Alpha2Spec `json:"v1alpha2,omitempty"`
 }
 
-// Validate checks that m contains a valid, populated spec with an orchestrator configured.
+// Validate checks that m contains a valid, populated spec with a correctly configured orchestrator.
 func (m *Manifest) Validate() error {
 	switch {
 	case m.V1Alpha1 != nil:
-		err := m.V1Alpha1.validate()
-		if err != nil {
+		if err := m.V1Alpha1.validate(); err != nil {
 			return err
 		}
 
 		if m.V1Alpha1.Orchestrator == nil {
 			return ErrOrchestratorRequired
 		}
+
+		if err := validateOrchestrator(m.V1Alpha1.Orchestrator); err != nil {
+			return err
+		}
 	case m.V1Alpha2 != nil:
-		err := m.V1Alpha2.validate()
-		if err != nil {
+		if err := m.V1Alpha2.validate(); err != nil {
 			return err
 		}
 
 		if m.V1Alpha2.Orchestrator == nil {
 			return ErrOrchestratorRequired
+		}
+
+		if err := validateOrchestrator(m.V1Alpha2.Orchestrator); err != nil {
+			return err
 		}
 	default:
 		return fmt.Errorf("%w %q", ErrNoSpec, m.Version)
@@ -49,13 +55,25 @@ func (m *Manifest) Validate() error {
 	return nil
 }
 
+func validateOrchestrator(o *OrchestratorSpec) error {
+	if o.Env == "" {
+		return ErrOrchestratorEnvRequired
+	}
+
+	if o.Bearer == nil && o.MTLS == nil {
+		return ErrOrchestratorAuthRequired
+	}
+
+	return nil
+}
+
 // V1Alpha1Spec is the spec for OAC images declaring version "v1alpha1".
 type V1Alpha1Spec struct {
 	Name         string                   `json:"name"`
-	Description  string                   `json:"description,omitempty"`
-	Inference    InferenceSpec            `json:"inference"`
+	Description  string                   `json:"description,omitempty"` // unofficial extension; not in spec
+	Inference    *InferenceSpec           `json:"inference,omitempty"`
 	MCP          map[string]MCPSpec       `json:"mcp,omitempty"`
-	Workspaces   map[string]WorkspaceSpec `json:"workspaces,omitempty"`
+	Workspace    map[string]WorkspaceSpec `json:"workspace,omitempty"`
 	Orchestrator *OrchestratorSpec        `json:"orchestrator,omitempty"`
 	Events       map[string]EventSpec     `json:"events,omitempty"`
 }
@@ -77,12 +95,11 @@ type V1Alpha2Spec struct {
 }
 
 func (s *V1Alpha2Spec) validate() error {
-	err := s.V1Alpha1Spec.validate()
-	if err != nil {
+	if err := s.V1Alpha1Spec.validate(); err != nil {
 		return err
 	}
 
-	if s.Session.Isolation && len(s.Workspaces) > 0 {
+	if s.Session.Isolation && len(s.Workspace) > 0 {
 		return ErrSessionIsolation
 	}
 
@@ -94,25 +111,28 @@ type SessionSpec struct {
 	Isolation bool `json:"isolation,omitempty"`
 }
 
+// EnvFile describes where a credential value is delivered at runtime.
+// At least one field must be set. Both may be set simultaneously.
+type EnvFile struct {
+	Env  string `json:"env,omitempty"`
+	File string `json:"file,omitempty"`
+}
+
 // InferenceSpec describes the agent's inference configuration.
+// Types is populated by a custom UnmarshalJSON and holds per-type model lists.
 type InferenceSpec struct {
-	Provider string `json:"provider,omitempty"`
-	Model    string `json:"model,omitempty"`
+	APIBase *EnvFile                     `json:"api_base,omitempty"`
+	APIKey  *EnvFile                     `json:"api_key,omitempty"`
+	Types   map[string]InferenceTypeSpec `json:"-"` // populated by UnmarshalJSON
 }
 
-// InferenceTypeSpec represents a supported inference backend type.
+// InferenceTypeSpec holds the model list for a single inference type.
 type InferenceTypeSpec struct {
-	Name string `json:"name"`
+	Models string `json:"models,omitempty"`
 }
 
-// MCPSpec describes an MCP server endpoint and its authentication.
+// MCPSpec describes an MCP server's authentication configuration.
 type MCPSpec struct {
-	URL  string   `json:"url,omitempty"`
-	Auth *MCPAuth `json:"auth,omitempty"`
-}
-
-// MCPAuth holds authentication configuration for an MCP server.
-type MCPAuth struct {
 	Bearer *MCPBearerAuth `json:"bearer,omitempty"`
 	OAuth  *MCPOAuthAuth  `json:"oauth,omitempty"`
 	DCR    *MCPDCRAuth    `json:"dcr,omitempty"`
@@ -120,58 +140,54 @@ type MCPAuth struct {
 
 // MCPBearerAuth carries a bearer token credential for an MCP server.
 type MCPBearerAuth struct {
-	Token CredentialTarget `json:"token"`
+	Token EnvFile `json:"token"`
 }
 
 // MCPOAuthAuth carries OAuth2 client credentials for an MCP server.
 type MCPOAuthAuth struct {
-	ClientID     string           `json:"client-id,omitempty"`
-	ClientSecret CredentialTarget `json:"client-secret"`
+	ClientID     EnvFile `json:"client_id"`
+	ClientSecret EnvFile `json:"client_secret"`
 }
 
 // MCPDCRAuth carries Dynamic Client Registration credentials for an MCP server.
 type MCPDCRAuth struct {
-	Endpoint   string           `json:"endpoint,omitempty"`
-	Credential CredentialTarget `json:"credential"`
-}
-
-// CredentialTarget describes where to read a secret value at runtime.
-type CredentialTarget struct {
-	EnvVar string `json:"env,omitempty"`
-	Secret string `json:"secret,omitempty"`
+	Scopes       string  `json:"scopes,omitempty"`
+	ClientID     EnvFile `json:"client_id"`
+	ClientSecret EnvFile `json:"client_secret"`
 }
 
 // WorkspaceSpec describes a mounted workspace volume.
 type WorkspaceSpec struct {
-	Type string `json:"type,omitempty"`
-	Path string `json:"path,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Mutable bool   `json:"mutable,omitempty"`
 }
 
 // OrchestratorSpec describes the orchestrator endpoint and its authentication.
 type OrchestratorSpec struct {
-	URL  string            `json:"url,omitempty"`
-	Auth *OrchestratorAuth `json:"auth,omitempty"`
-}
-
-// OrchestratorAuth holds authentication configuration for an orchestrator.
-type OrchestratorAuth struct {
+	Env    string                  `json:"env,omitempty"`
 	Bearer *OrchestratorBearerAuth `json:"bearer,omitempty"`
 	MTLS   *OrchestratorMTLSAuth   `json:"mtls,omitempty"`
 }
 
 // OrchestratorBearerAuth carries a bearer token for orchestrator authentication.
 type OrchestratorBearerAuth struct {
-	Token CredentialTarget `json:"token"`
+	Token EnvFile `json:"token"`
 }
 
 // OrchestratorMTLSAuth carries mTLS credentials for orchestrator authentication.
 type OrchestratorMTLSAuth struct {
-	Cert CredentialTarget `json:"cert"`
-	Key  CredentialTarget `json:"key"`
+	Cert EnvFile `json:"cert"`
+	Key  EnvFile `json:"key"`
+	CA   EnvFile `json:"ca"`
 }
 
-// EventSpec describes an event trigger.
+// EventSpec describes an event subscription with an embedded schema.
 type EventSpec struct {
-	Type    string `json:"type,omitempty"`
-	Channel string `json:"channel,omitempty"`
+	Schema EventSchema `json:"schema"`
+}
+
+// EventSchema holds the path and MIME type of the event schema file.
+type EventSchema struct {
+	Path     string `json:"path,omitempty"`
+	MIMEType string `json:"mimetype,omitempty"`
 }

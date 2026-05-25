@@ -223,3 +223,105 @@ func TestScanRepoInspectImageErrorForce(t *testing.T) {
 		t.Fatal("expected no agents when all inspections fail")
 	}
 }
+
+// ──────────────────────────────────────────────
+// stubCache — minimal Cache for whitebox tests
+// ──────────────────────────────────────────────
+
+type stubCache struct {
+	digests    map[string][]byte
+	repoLatest map[string]string
+}
+
+func (c *stubCache) GetDigest(d string) ([]byte, bool) {
+	v, ok := c.digests[d]
+	return v, ok
+}
+
+func (c *stubCache) SetDigest(d string, b []byte) { c.digests[d] = b }
+
+func (c *stubCache) GetLatestDigest(r string) (string, bool) {
+	v, ok := c.repoLatest[r]
+	return v, ok
+}
+
+func (c *stubCache) SetLatestDigest(r, d string) { c.repoLatest[r] = d }
+func (c *stubCache) Save() error                 { return nil }
+
+// ──────────────────────────────────────────────
+// handleLatestTag / handleCacheHit / shouldSkipNonOACLatest / emitAgent
+// ──────────────────────────────────────────────
+
+// TestHandleLatestTagForceWithCache verifies that force=true writes the digest
+// to the cache and returns false (do not skip the repo).
+func TestHandleLatestTagForceWithCache(t *testing.T) {
+	t.Parallel()
+
+	c := &stubCache{
+		digests:    make(map[string][]byte),
+		repoLatest: make(map[string]string),
+	}
+	rs := repoScanner{c: c, force: true}
+
+	got := rs.handleLatestTag("myrepo", "sha256:abc")
+	if got {
+		t.Fatal("expected false (repo not skipped)")
+	}
+
+	if c.repoLatest["myrepo"] != "sha256:abc" {
+		t.Fatalf("expected cache entry sha256:abc, got %q", c.repoLatest["myrepo"])
+	}
+}
+
+// TestHandleCacheHitMalformedJSON verifies that a malformed cached entry returns
+// tagContinue without emitting anything.
+func TestHandleCacheHitMalformedJSON(t *testing.T) {
+	t.Parallel()
+
+	c := &stubCache{
+		digests:    map[string][]byte{"sha256:abc": []byte("{invalid")},
+		repoLatest: make(map[string]string),
+	}
+	out := make(chan AgentImage, 1)
+
+	action := handleCacheHit(context.Background(), c, "sha256:abc", "ref", out)
+	if action != tagContinue {
+		t.Fatalf("expected tagContinue, got %v", action)
+	}
+
+	if len(out) != 0 {
+		t.Fatal("expected nothing emitted for malformed JSON")
+	}
+}
+
+// TestShouldSkipNonOACLatestCachedOACAgent verifies that a non-nil cached entry
+// (OAC agent) does NOT cause the repo to be skipped.
+func TestShouldSkipNonOACLatestCachedOACAgent(t *testing.T) {
+	t.Parallel()
+
+	c := &stubCache{
+		digests:    map[string][]byte{"sha256:abc": []byte(`{"name":"agent"}`)},
+		repoLatest: make(map[string]string),
+	}
+
+	got := shouldSkipNonOACLatest(c, "sha256:abc")
+	if got {
+		t.Fatal("should NOT skip when cached result is non-nil (OAC agent)")
+	}
+}
+
+// TestEmitAgentContextCancelled verifies emitAgent returns true when the context
+// is already cancelled and the output channel is unbuffered (nobody reading).
+func TestEmitAgentContextCancelled(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	out := make(chan AgentImage) // unbuffered, nobody reading
+
+	got := emitAgent(ctx, AgentImage{Name: "x"}, out)
+	if !got {
+		t.Fatal("expected true (ctx.Done() path taken)")
+	}
+}

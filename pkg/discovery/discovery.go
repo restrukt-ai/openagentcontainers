@@ -441,20 +441,28 @@ func storeCacheResult(c Cache, digest string, agentJSON []byte) {
 	c.SetDigest(digest, agentJSON)
 }
 
-func inspectImage(ref string, opts ...crane.Option) (AgentImage, bool, error) {
+// FetchLabels fetches the OCI image config for ref and returns its labels.
+func FetchLabels(ref string, opts ...crane.Option) (map[string]string, error) {
 	raw, err := crane.Config(ref, opts...)
 	if err != nil {
-		return AgentImage{}, false, err
+		return nil, err
 	}
 
 	var cfg imageConfig
 
 	err = json.Unmarshal(raw, &cfg)
 	if err != nil {
-		return AgentImage{}, false, err
+		return nil, err
 	}
 
-	labels := cfg.Config.Labels
+	return cfg.Config.Labels, nil
+}
+
+func inspectImage(ref string, opts ...crane.Option) (AgentImage, bool, error) {
+	labels, err := FetchLabels(ref, opts...)
+	if err != nil {
+		return AgentImage{}, false, err
+	}
 
 	version, ok := labels[oac.LabelVersion]
 	if !ok {

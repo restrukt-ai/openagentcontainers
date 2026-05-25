@@ -7,3 +7,5 @@ spec-site/.env
 cli/bin/
 cli/.task/
 cli/node_modules/
+.task/
+*.out

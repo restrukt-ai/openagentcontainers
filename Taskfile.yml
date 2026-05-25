@@ -3,8 +3,12 @@ version: "3"
 dotenv: ["spec-site/.env"]
 
 includes:
-  cli: ./cli/Taskfile.yml
-  pkg: ./pkg/Taskfile.yml
+  cli:
+    taskfile: ./cli/Taskfile.yml
+    dir: ./cli
+  pkg:
+    taskfile: ./pkg/Taskfile.yml
+    dir: ./pkg
   spec: ./spec-site/Taskfile.yml
 
 tasks:

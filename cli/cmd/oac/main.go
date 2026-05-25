@@ -32,6 +32,7 @@ func main() {
 
 	root.AddCommand(discoverCmd())
 	root.AddCommand(searchCmd())
+	root.AddCommand(lintCmd())
 
 	err := root.Execute()
 	if err != nil {

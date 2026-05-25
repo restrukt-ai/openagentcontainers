@@ -10,11 +10,13 @@ import (
 
 // Sentinel errors returned by Parse and Validate.
 var (
-	ErrUnsupportedVersion   = errors.New("unsupported spec version")
-	ErrNoSpec               = errors.New("no spec populated for version")
-	ErrNameRequired         = errors.New("name is required")
-	ErrOrchestratorRequired = errors.New("orchestrator is required")
-	ErrSessionIsolation     = errors.New("session.isolation cannot be combined with workspaces")
+	ErrUnsupportedVersion       = errors.New("unsupported spec version")
+	ErrNoSpec                   = errors.New("no spec populated for version")
+	ErrNameRequired             = errors.New("name is required")
+	ErrOrchestratorRequired     = errors.New("orchestrator is required")
+	ErrOrchestratorEnvRequired  = errors.New("orchestrator.env is required")
+	ErrOrchestratorAuthRequired = errors.New("orchestrator must declare at least one auth method")
+	ErrSessionIsolation         = errors.New("session.isolation cannot be combined with workspaces")
 )
 
 // Parse parses OAC labels into a Manifest, returning an error for unknown
@@ -77,6 +79,62 @@ func parseV1Alpha2(labels map[string]string) (*V1Alpha2Spec, error) {
 	}
 
 	return &spec, nil
+}
+
+// UnmarshalJSON implements custom unmarshaling for InferenceSpec.
+// Known keys "api_base" and "api_key" are decoded as *EnvFile fields.
+// All remaining keys are treated as inference type names and decoded as
+// InferenceTypeSpec values. Unknown sub-fields within a type spec are rejected.
+func (s *InferenceSpec) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	if v, ok := raw["api_base"]; ok {
+		s.APIBase = new(EnvFile)
+
+		dec := json.NewDecoder(bytes.NewReader(v))
+		dec.DisallowUnknownFields()
+
+		if err := dec.Decode(s.APIBase); err != nil {
+			return fmt.Errorf("inference.api_base: %w", err)
+		}
+
+		delete(raw, "api_base")
+	}
+
+	if v, ok := raw["api_key"]; ok {
+		s.APIKey = new(EnvFile)
+
+		dec := json.NewDecoder(bytes.NewReader(v))
+		dec.DisallowUnknownFields()
+
+		if err := dec.Decode(s.APIKey); err != nil {
+			return fmt.Errorf("inference.api_key: %w", err)
+		}
+
+		delete(raw, "api_key")
+	}
+
+	for k, v := range raw {
+		var ts InferenceTypeSpec
+
+		dec := json.NewDecoder(bytes.NewReader(v))
+		dec.DisallowUnknownFields()
+
+		if err := dec.Decode(&ts); err != nil {
+			return fmt.Errorf("inference.%s: %w", k, err)
+		}
+
+		if s.Types == nil {
+			s.Types = make(map[string]InferenceTypeSpec)
+		}
+
+		s.Types[k] = ts
+	}
+
+	return nil
 }
 
 // labelsToTree strips labelPrefix from each key, skips "version",
