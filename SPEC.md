@@ -100,7 +100,7 @@ configuration files or per-agent knowledge hardcoded into the infrastructure.
 - This specification does not define a new container runtime or OCI distribution mechanism.
 - This specification does not prescribe inter-agent communication protocols (MCP, A2A, etc.).
 - This specification does not define model weight packaging; see ModelPack
-  ([§11.1](#111-modelpack--modelkit)) for that scope.
+  ([§11.1](#111-modelpack-modelkit)) for that scope.
 - This specification does not restrict the inference platform used by the orchestrator.
 
 ---
