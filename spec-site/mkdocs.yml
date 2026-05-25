@@ -2,6 +2,8 @@ site_name: Open Agent Containers
 site_description: Specification for the Open Agent Containers standard
 docs_dir: docs
 site_dir: dist
+repo_url: https://github.com/restrukt-ai/openagentcontainers
+repo_name: restrukt-ai/openagentcontainers
 
 theme:
   name: material

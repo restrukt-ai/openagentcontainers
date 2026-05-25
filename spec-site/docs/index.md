@@ -168,3 +168,15 @@ The following are left to the runtime harness inside the image:
 - **Skills and tools**
 - **MCP server configuration** — labels only cover credential negotiation, not how servers are launched or connected.
 - **Event payload format** — the spec declares schemas for orchestrator-side transformation; wire format is an implementation concern.
+
+## Open Source
+
+The OAC specification is open source, maintained at
+[github.com/restrukt-ai/openagentcontainers](https://github.com/restrukt-ai/openagentcontainers)
+under the CC BY 4.0 license.
+
+The spec is a living document. If something is unclear, incomplete, or wrong — open an issue.
+If you're building an OAC-compliant harness or orchestrator and ran into an edge case the spec
+doesn't address, that's a gap worth filing. Pull requests to the spec text, label reference, and
+changelog are welcome. See the [contribution guide](https://github.com/restrukt-ai/openagentcontainers/blob/main/CONTRIBUTING.md)
+for setup instructions and conventions.
