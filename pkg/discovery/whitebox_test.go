@@ -235,6 +235,7 @@ type stubCache struct {
 
 func (c *stubCache) GetDigest(d string) ([]byte, bool) {
 	v, ok := c.digests[d]
+
 	return v, ok
 }
 
@@ -242,6 +243,7 @@ func (c *stubCache) SetDigest(d string, b []byte) { c.digests[d] = b }
 
 func (c *stubCache) GetLatestDigest(r string) (string, bool) {
 	v, ok := c.repoLatest[r]
+
 	return v, ok
 }
 

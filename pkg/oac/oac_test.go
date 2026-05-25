@@ -31,20 +31,20 @@ func TestParse_V1Alpha2_FullLabels(t *testing.T) {
 
 	labels := map[string]string{
 		"org.openagentcontainers.version":                           "v1alpha2",
-		"org.openagentcontainers.name":                             "full-agent",
-		"org.openagentcontainers.description":                      "A fully-labelled agent",
-		"org.openagentcontainers.orchestrator.env":                 "ORCHESTRATOR_ADDR",
-		"org.openagentcontainers.orchestrator.bearer.token.env":    "ORCH_TOKEN",
-		"org.openagentcontainers.inference.api_base.env":           "OPENAI_BASE_URL",
-		"org.openagentcontainers.inference.api_key.env":            "OPENAI_API_KEY",
+		"org.openagentcontainers.name":                              "full-agent",
+		"org.openagentcontainers.description":                       "A fully-labelled agent",
+		"org.openagentcontainers.orchestrator.env":                  "ORCHESTRATOR_ADDR",
+		"org.openagentcontainers.orchestrator.bearer.token.env":     "ORCH_TOKEN",
+		"org.openagentcontainers.inference.api_base.env":            "OPENAI_BASE_URL",
+		"org.openagentcontainers.inference.api_key.env":             "OPENAI_API_KEY",
 		"org.openagentcontainers.inference.chat-completions.models": "gpt-4o",
-		"org.openagentcontainers.inference.embeddings.models":      "text-embedding-004",
-		"org.openagentcontainers.mcp.srv.bearer.token.env":         "SRV_TOKEN",
-		"org.openagentcontainers.workspace.code.path":              "/workspace/code",
-		"org.openagentcontainers.workspace.code.mutable":           "true",
-		"org.openagentcontainers.events.start.schema.path":         "/oac/schemas/start.json",
-		"org.openagentcontainers.events.start.schema.mimetype":     "application/schema+json",
-		"org.openagentcontainers.session.isolation":                "false",
+		"org.openagentcontainers.inference.embeddings.models":       "text-embedding-004",
+		"org.openagentcontainers.mcp.srv.bearer.token.env":          "SRV_TOKEN",
+		"org.openagentcontainers.workspace.code.path":               "/workspace/code",
+		"org.openagentcontainers.workspace.code.mutable":            "true",
+		"org.openagentcontainers.events.start.schema.path":          "/oac/schemas/start.json",
+		"org.openagentcontainers.events.start.schema.mimetype":      "application/schema+json",
+		"org.openagentcontainers.session.isolation":                 "false",
 	}
 
 	m, err := oac.Parse(labels)
@@ -103,8 +103,8 @@ func TestParse_InferenceMultipleTypes(t *testing.T) {
 			t.Parallel()
 
 			labels := map[string]string{
-				"org.openagentcontainers.version":                               "v1alpha2",
-				"org.openagentcontainers.name":                                  "agent",
+				"org.openagentcontainers.version":                             "v1alpha2",
+				"org.openagentcontainers.name":                                "agent",
 				"org.openagentcontainers.inference." + tt.typeKey + ".models": tt.models,
 			}
 
@@ -134,8 +134,8 @@ func TestParse_MCPBearer(t *testing.T) {
 	t.Parallel()
 
 	labels := map[string]string{
-		"org.openagentcontainers.version":                    "v1alpha2",
-		"org.openagentcontainers.name":                       "agent",
+		"org.openagentcontainers.version":                   "v1alpha2",
+		"org.openagentcontainers.name":                      "agent",
 		"org.openagentcontainers.mcp.srv.bearer.token.env":  "MY_TOKEN",
 		"org.openagentcontainers.mcp.srv.bearer.token.file": "/run/secrets/token",
 	}
@@ -154,8 +154,8 @@ func TestParse_MCPOAuth(t *testing.T) {
 	t.Parallel()
 
 	labels := map[string]string{
-		"org.openagentcontainers.version":                          "v1alpha2",
-		"org.openagentcontainers.name":                             "agent",
+		"org.openagentcontainers.version":                         "v1alpha2",
+		"org.openagentcontainers.name":                            "agent",
 		"org.openagentcontainers.mcp.srv.oauth.client_id.env":     "MY_CLIENT_ID",
 		"org.openagentcontainers.mcp.srv.oauth.client_secret.env": "MY_CLIENT_SECRET",
 	}
@@ -174,11 +174,11 @@ func TestParse_MCPDCRWithScopes(t *testing.T) {
 	t.Parallel()
 
 	labels := map[string]string{
-		"org.openagentcontainers.version":                          "v1alpha2",
-		"org.openagentcontainers.name":                             "agent",
-		"org.openagentcontainers.mcp.srv.dcr.scopes":              "repo:read repo:write",
-		"org.openagentcontainers.mcp.srv.dcr.client_id.env":       "MY_CLIENT_ID",
-		"org.openagentcontainers.mcp.srv.dcr.client_secret.file":  "/run/secrets/secret",
+		"org.openagentcontainers.version":                        "v1alpha2",
+		"org.openagentcontainers.name":                           "agent",
+		"org.openagentcontainers.mcp.srv.dcr.scopes":             "repo:read repo:write",
+		"org.openagentcontainers.mcp.srv.dcr.client_id.env":      "MY_CLIENT_ID",
+		"org.openagentcontainers.mcp.srv.dcr.client_secret.file": "/run/secrets/secret",
 	}
 
 	m, err := oac.Parse(labels)
@@ -196,12 +196,12 @@ func TestParse_OrchestratorMTLS(t *testing.T) {
 	t.Parallel()
 
 	labels := map[string]string{
-		"org.openagentcontainers.version":                      "v1alpha2",
-		"org.openagentcontainers.name":                         "agent",
-		"org.openagentcontainers.orchestrator.env":             "ORCHESTRATOR_ADDR",
-		"org.openagentcontainers.orchestrator.mtls.cert.file":  "/run/secrets/harness.crt",
-		"org.openagentcontainers.orchestrator.mtls.key.file":   "/run/secrets/harness.key",
-		"org.openagentcontainers.orchestrator.mtls.ca.file":    "/run/secrets/ca.crt",
+		"org.openagentcontainers.version":                     "v1alpha2",
+		"org.openagentcontainers.name":                        "agent",
+		"org.openagentcontainers.orchestrator.env":            "ORCHESTRATOR_ADDR",
+		"org.openagentcontainers.orchestrator.mtls.cert.file": "/run/secrets/harness.crt",
+		"org.openagentcontainers.orchestrator.mtls.key.file":  "/run/secrets/harness.key",
+		"org.openagentcontainers.orchestrator.mtls.ca.file":   "/run/secrets/ca.crt",
 	}
 
 	m, err := oac.Parse(labels)
@@ -220,10 +220,10 @@ func TestParse_WorkspaceMutable(t *testing.T) {
 	t.Parallel()
 
 	labels := map[string]string{
-		"org.openagentcontainers.version":                 "v1alpha2",
-		"org.openagentcontainers.name":                    "agent",
-		"org.openagentcontainers.workspace.repo.path":     "/workspace/repo",
-		"org.openagentcontainers.workspace.repo.mutable":  "true",
+		"org.openagentcontainers.version":                "v1alpha2",
+		"org.openagentcontainers.name":                   "agent",
+		"org.openagentcontainers.workspace.repo.path":    "/workspace/repo",
+		"org.openagentcontainers.workspace.repo.mutable": "true",
 	}
 
 	m, err := oac.Parse(labels)
@@ -261,7 +261,7 @@ func TestParse_UnknownVersion(t *testing.T) {
 
 	_, err := oac.Parse(labels)
 	require.Error(t, err)
-	assert.ErrorIs(t, err, oac.ErrUnsupportedVersion)
+	require.ErrorIs(t, err, oac.ErrUnsupportedVersion)
 	assert.Contains(t, err.Error(), "v99beta1")
 }
 
@@ -511,9 +511,9 @@ func TestParse_NonOACLabelIgnored(t *testing.T) {
 	t.Parallel()
 
 	labels := map[string]string{
-		"com.docker.foo":                      "bar",
-		"org.openagentcontainers.version":     "v1alpha2",
-		"org.openagentcontainers.name":        "agent",
+		"com.docker.foo":                  "bar",
+		"org.openagentcontainers.version": "v1alpha2",
+		"org.openagentcontainers.name":    "agent",
 	}
 
 	m, err := oac.Parse(labels)
@@ -528,9 +528,9 @@ func TestParse_InferenceAPIBaseAsScalar(t *testing.T) {
 	t.Parallel()
 
 	labels := map[string]string{
-		"org.openagentcontainers.version":             "v1alpha2",
-		"org.openagentcontainers.name":                "agent",
-		"org.openagentcontainers.inference.api_base":  "OPENAI_BASE_URL",
+		"org.openagentcontainers.version":            "v1alpha2",
+		"org.openagentcontainers.name":               "agent",
+		"org.openagentcontainers.inference.api_base": "OPENAI_BASE_URL",
 	}
 
 	_, err := oac.Parse(labels)
@@ -542,9 +542,9 @@ func TestParse_InferenceAPIKeyAsScalar(t *testing.T) {
 	t.Parallel()
 
 	labels := map[string]string{
-		"org.openagentcontainers.version":            "v1alpha2",
-		"org.openagentcontainers.name":               "agent",
-		"org.openagentcontainers.inference.api_key":  "OPENAI_API_KEY",
+		"org.openagentcontainers.version":           "v1alpha2",
+		"org.openagentcontainers.name":              "agent",
+		"org.openagentcontainers.inference.api_key": "OPENAI_API_KEY",
 	}
 
 	_, err := oac.Parse(labels)

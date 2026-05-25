@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	gcrregistry "github.com/google/go-containerregistry/pkg/registry"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"golang.org/x/time/rate"
@@ -43,7 +43,8 @@ func integMakeImage(t *testing.T, labels map[string]string) v1.Image {
 func integPush(t *testing.T, img v1.Image, ref string, opts []crane.Option) {
 	t.Helper()
 
-	if err := crane.Push(img, ref, opts...); err != nil {
+	err := crane.Push(img, ref, opts...)
+	if err != nil {
 		t.Fatalf("push %s: %v", ref, err)
 	}
 }

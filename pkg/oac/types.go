@@ -21,38 +21,40 @@ type Manifest struct {
 	V1Alpha2 *V1Alpha2Spec `json:"v1alpha2,omitempty"`
 }
 
+// specValidator is implemented by each versioned spec.
+type specValidator interface {
+	validate() error
+	orchestrator() *OrchestratorSpec
+}
+
+func (s *V1Alpha1Spec) orchestrator() *OrchestratorSpec { return s.Orchestrator }
+func (s *V1Alpha2Spec) orchestrator() *OrchestratorSpec { return s.Orchestrator }
+
+// validateSpec validates a versioned spec and its orchestrator.
+func validateSpec(s specValidator) error {
+	err := s.validate()
+	if err != nil {
+		return err
+	}
+
+	o := s.orchestrator()
+	if o == nil {
+		return ErrOrchestratorRequired
+	}
+
+	return validateOrchestrator(o)
+}
+
 // Validate checks that m contains a valid, populated spec with a correctly configured orchestrator.
 func (m *Manifest) Validate() error {
 	switch {
 	case m.V1Alpha1 != nil:
-		if err := m.V1Alpha1.validate(); err != nil {
-			return err
-		}
-
-		if m.V1Alpha1.Orchestrator == nil {
-			return ErrOrchestratorRequired
-		}
-
-		if err := validateOrchestrator(m.V1Alpha1.Orchestrator); err != nil {
-			return err
-		}
+		return validateSpec(m.V1Alpha1)
 	case m.V1Alpha2 != nil:
-		if err := m.V1Alpha2.validate(); err != nil {
-			return err
-		}
-
-		if m.V1Alpha2.Orchestrator == nil {
-			return ErrOrchestratorRequired
-		}
-
-		if err := validateOrchestrator(m.V1Alpha2.Orchestrator); err != nil {
-			return err
-		}
+		return validateSpec(m.V1Alpha2)
 	default:
 		return fmt.Errorf("%w %q", ErrNoSpec, m.Version)
 	}
-
-	return nil
 }
 
 func validateOrchestrator(o *OrchestratorSpec) error {
@@ -95,7 +97,8 @@ type V1Alpha2Spec struct {
 }
 
 func (s *V1Alpha2Spec) validate() error {
-	if err := s.V1Alpha1Spec.validate(); err != nil {
+	err := s.V1Alpha1Spec.validate()
+	if err != nil {
 		return err
 	}
 

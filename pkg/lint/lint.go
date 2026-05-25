@@ -2,7 +2,7 @@
 package lint
 
 import (
-	"sort"
+	"slices"
 
 	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
@@ -67,6 +67,20 @@ func checkInference(inf *oac.InferenceSpec, issues *[]Issue) {
 		return
 	}
 
+	checkInferenceAPIKeyPair(inf, issues)
+	checkInferenceEnvFiles(inf, issues)
+
+	if len(inf.Types) == 0 && (inf.APIBase != nil || inf.APIKey != nil) {
+		*issues = append(*issues, Issue{
+			Severity: SeverityWarning,
+			Field:    "inference",
+			Message:  "no inference types declared",
+		})
+	}
+}
+
+// checkInferenceAPIKeyPair warns when api_base and api_key are not set together.
+func checkInferenceAPIKeyPair(inf *oac.InferenceSpec, issues *[]Issue) {
 	if inf.APIBase != nil && inf.APIKey == nil {
 		*issues = append(*issues, Issue{
 			Severity: SeverityWarning,
@@ -82,21 +96,16 @@ func checkInference(inf *oac.InferenceSpec, issues *[]Issue) {
 			Message:  "api_base is required when api_key is set",
 		})
 	}
+}
 
+// checkInferenceEnvFiles validates credential sources for api_base and api_key.
+func checkInferenceEnvFiles(inf *oac.InferenceSpec, issues *[]Issue) {
 	if inf.APIBase != nil {
 		checkEnvFile("inference.api_base", *inf.APIBase, issues)
 	}
 
 	if inf.APIKey != nil {
 		checkEnvFile("inference.api_key", *inf.APIKey, issues)
-	}
-
-	if len(inf.Types) == 0 && (inf.APIBase != nil || inf.APIKey != nil) {
-		*issues = append(*issues, Issue{
-			Severity: SeverityWarning,
-			Field:    "inference",
-			Message:  "no inference types declared",
-		})
 	}
 }
 
@@ -106,7 +115,7 @@ func checkMCPs(mcps map[string]oac.MCPSpec, issues *[]Issue) {
 		keys = append(keys, k)
 	}
 
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	for _, name := range keys {
 		checkMCP(name, mcps[name], issues)
@@ -187,7 +196,7 @@ func checkWorkspaces(ws map[string]oac.WorkspaceSpec, issues *[]Issue) {
 		keys = append(keys, k)
 	}
 
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	for _, name := range keys {
 		if ws[name].Path == "" {
@@ -206,7 +215,7 @@ func checkEvents(evs map[string]oac.EventSpec, issues *[]Issue) {
 		keys = append(keys, k)
 	}
 
-	sort.Strings(keys)
+	slices.Sort(keys)
 
 	for _, name := range keys {
 		ev := evs[name]

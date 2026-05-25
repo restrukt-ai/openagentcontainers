@@ -81,57 +81,85 @@ func parseV1Alpha2(labels map[string]string) (*V1Alpha2Spec, error) {
 	return &spec, nil
 }
 
+// decodeStrict decodes v into dst using a strict decoder that rejects unknown fields.
+func decodeStrict(v json.RawMessage, dst any) error {
+	dec := json.NewDecoder(bytes.NewReader(v))
+	dec.DisallowUnknownFields()
+
+	return dec.Decode(dst)
+}
+
+// decodeEnvFileField decodes the named key from raw into dst (an *EnvFile),
+// removes the key from raw, and reports whether the key was present.
+// Returns an error only when the key is present but decoding fails.
+func decodeEnvFileField(raw map[string]json.RawMessage, key string, dst **EnvFile) error {
+	v, ok := raw[key]
+	if !ok {
+		return nil
+	}
+
+	ef := new(EnvFile)
+
+	err := decodeStrict(v, ef)
+	if err != nil {
+		return err
+	}
+
+	*dst = ef
+
+	delete(raw, key)
+
+	return nil
+}
+
+// inferenceTypesFromRaw decodes every remaining entry in raw as an
+// InferenceTypeSpec and returns the resulting map.
+func inferenceTypesFromRaw(raw map[string]json.RawMessage) (map[string]InferenceTypeSpec, error) {
+	var types map[string]InferenceTypeSpec
+
+	for k, v := range raw {
+		var ts InferenceTypeSpec
+
+		err := decodeStrict(v, &ts)
+		if err != nil {
+			return nil, fmt.Errorf("inference.%s: %w", k, err)
+		}
+
+		if types == nil {
+			types = make(map[string]InferenceTypeSpec, len(raw))
+		}
+
+		types[k] = ts
+	}
+
+	return types, nil
+}
+
 // UnmarshalJSON implements custom unmarshaling for InferenceSpec.
 // Known keys "api_base" and "api_key" are decoded as *EnvFile fields.
 // All remaining keys are treated as inference type names and decoded as
 // InferenceTypeSpec values. Unknown sub-fields within a type spec are rejected.
 func (s *InferenceSpec) UnmarshalJSON(data []byte) error {
 	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(data, &raw); err != nil {
+
+	err := json.Unmarshal(data, &raw)
+	if err != nil {
 		return err
 	}
 
-	if v, ok := raw["api_base"]; ok {
-		s.APIBase = new(EnvFile)
-
-		dec := json.NewDecoder(bytes.NewReader(v))
-		dec.DisallowUnknownFields()
-
-		if err := dec.Decode(s.APIBase); err != nil {
-			return fmt.Errorf("inference.api_base: %w", err)
-		}
-
-		delete(raw, "api_base")
+	err = decodeEnvFileField(raw, "api_base", &s.APIBase)
+	if err != nil {
+		return fmt.Errorf("inference.api_base: %w", err)
 	}
 
-	if v, ok := raw["api_key"]; ok {
-		s.APIKey = new(EnvFile)
-
-		dec := json.NewDecoder(bytes.NewReader(v))
-		dec.DisallowUnknownFields()
-
-		if err := dec.Decode(s.APIKey); err != nil {
-			return fmt.Errorf("inference.api_key: %w", err)
-		}
-
-		delete(raw, "api_key")
+	err = decodeEnvFileField(raw, "api_key", &s.APIKey)
+	if err != nil {
+		return fmt.Errorf("inference.api_key: %w", err)
 	}
 
-	for k, v := range raw {
-		var ts InferenceTypeSpec
-
-		dec := json.NewDecoder(bytes.NewReader(v))
-		dec.DisallowUnknownFields()
-
-		if err := dec.Decode(&ts); err != nil {
-			return fmt.Errorf("inference.%s: %w", k, err)
-		}
-
-		if s.Types == nil {
-			s.Types = make(map[string]InferenceTypeSpec)
-		}
-
-		s.Types[k] = ts
+	s.Types, err = inferenceTypesFromRaw(raw)
+	if err != nil {
+		return err
 	}
 
 	return nil

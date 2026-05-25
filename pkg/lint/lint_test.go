@@ -1,6 +1,7 @@
 package lint_test
 
 import (
+	"maps"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,13 +29,9 @@ func baseLabels() map[string]string {
 
 func merge(base, extra map[string]string) map[string]string {
 	out := make(map[string]string, len(base)+len(extra))
-	for k, v := range base {
-		out[k] = v
-	}
+	maps.Copy(out, base)
 
-	for k, v := range extra {
-		out[k] = v
-	}
+	maps.Copy(out, extra)
 
 	return out
 }
@@ -53,12 +50,12 @@ func TestLint_Clean(t *testing.T) {
 	t.Parallel()
 
 	labels := merge(baseLabels(), map[string]string{
-		"org.openagentcontainers.description":                        "A clean agent",
-		"org.openagentcontainers.inference.api_base.env":             "OPENAI_BASE_URL",
-		"org.openagentcontainers.inference.api_key.env":              "OPENAI_API_KEY",
-		"org.openagentcontainers.inference.chat-completions.models":  "gpt-4o",
-		"org.openagentcontainers.orchestrator.env":                   "ORCHESTRATOR_ADDR",
-		"org.openagentcontainers.orchestrator.bearer.token.env":      "ORCH_TOKEN",
+		"org.openagentcontainers.description":                       "A clean agent",
+		"org.openagentcontainers.inference.api_base.env":            "OPENAI_BASE_URL",
+		"org.openagentcontainers.inference.api_key.env":             "OPENAI_API_KEY",
+		"org.openagentcontainers.inference.chat-completions.models": "gpt-4o",
+		"org.openagentcontainers.orchestrator.env":                  "ORCHESTRATOR_ADDR",
+		"org.openagentcontainers.orchestrator.bearer.token.env":     "ORCH_TOKEN",
 	})
 
 	issues := lint.Lint(mustParse(t, labels))
@@ -372,8 +369,8 @@ func TestLint_OrchestratorMTLSCertNoSource(t *testing.T) {
 				Orchestrator: &oac.OrchestratorSpec{
 					Env: "ORCHESTRATOR_ADDR",
 					MTLS: &oac.OrchestratorMTLSAuth{
-						Cert: oac.EnvFile{},               // no source
-						Key:  oac.EnvFile{File: "/key"},   // has source
+						Cert: oac.EnvFile{},             // no source
+						Key:  oac.EnvFile{File: "/key"}, // has source
 					},
 				},
 			},
