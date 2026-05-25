@@ -72,9 +72,9 @@
       {% endif %}
     {% endif %}
     {% if config.repo_url %}
-      <div class="md-header__source">
-        {% include "partials/source.html" %}
-      </div>
+      <a href="{{ config.repo_url }}" title="GitHub" class="md-header__button md-icon" target="_blank" rel="noopener">
+        {% include ".icons/fontawesome/brands/github.svg" %}
+      </a>
     {% endif %}
   </nav>
 </header>
