@@ -27,7 +27,7 @@ func ExampleSearch_allAgents() {
 	}
 
 	for _, a := range agents {
-		fmt.Println(a.Name)
+		fmt.Println(a.Name())
 	}
 }
 
@@ -45,6 +45,6 @@ func ExampleSearch() {
 	}
 
 	for _, a := range agents {
-		fmt.Println(a.Name)
+		fmt.Println(a.Name())
 	}
 }

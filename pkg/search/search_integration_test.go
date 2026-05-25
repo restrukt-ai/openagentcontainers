@@ -80,12 +80,12 @@ func TestSearch_EmptyQueryReturnsAll(t *testing.T) {
 	host, craneOpts := integTestRegistry(t)
 
 	integPush(t, integMakeImage(t, map[string]string{
-		oac.LabelVersion: oac.VersionV1Alpha1,
+		oac.LabelVersion: string(oac.VersionV1Alpha1),
 		oac.LabelName:    "agent-a",
 	}), host+"/agent-a:latest", craneOpts)
 
 	integPush(t, integMakeImage(t, map[string]string{
-		oac.LabelVersion: oac.VersionV1Alpha2,
+		oac.LabelVersion: string(oac.VersionV1Alpha2),
 		oac.LabelName:    "agent-b",
 	}), host+"/agent-b:latest", craneOpts)
 
@@ -106,12 +106,12 @@ func TestSearch_QueryFilters(t *testing.T) {
 	host, craneOpts := integTestRegistry(t)
 
 	integPush(t, integMakeImage(t, map[string]string{
-		oac.LabelVersion: oac.VersionV1Alpha1,
+		oac.LabelVersion: string(oac.VersionV1Alpha1),
 		oac.LabelName:    "code-agent",
 	}), host+"/code-agent:latest", craneOpts)
 
 	integPush(t, integMakeImage(t, map[string]string{
-		oac.LabelVersion: oac.VersionV1Alpha2,
+		oac.LabelVersion: string(oac.VersionV1Alpha2),
 		oac.LabelName:    "data-agent",
 	}), host+"/data-agent:latest", craneOpts)
 
@@ -120,7 +120,7 @@ func TestSearch_QueryFilters(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(agents) != 1 || agents[0].Name != "code-agent" {
+	if len(agents) != 1 || agents[0].Name() != "code-agent" {
 		t.Fatalf("expected 1 agent named code-agent, got %v", agents)
 	}
 }

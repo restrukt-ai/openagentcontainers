@@ -22,7 +22,7 @@ func TestParse_V1Alpha2_MinimalValid(t *testing.T) {
 	m, err := oac.Parse(labels)
 	require.NoError(t, err)
 	require.NotNil(t, m.V1Alpha2)
-	assert.Equal(t, "v1alpha2", m.Version)
+	assert.Equal(t, oac.VersionV1Alpha2, m.SpecVersion)
 	assert.Equal(t, "my-agent", m.V1Alpha2.Name)
 }
 
@@ -313,7 +313,7 @@ func TestValidate_Valid(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: "v1alpha2",
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "my-agent",
@@ -334,8 +334,8 @@ func TestValidate_MissingName(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version:  "v1alpha2",
-		V1Alpha2: &oac.V1Alpha2Spec{},
+		SpecVersion: oac.VersionV1Alpha2,
+		V1Alpha2:    &oac.V1Alpha2Spec{},
 	}
 
 	err := m.Validate()
@@ -347,7 +347,7 @@ func TestValidate_MissingOrchestrator(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: "v1alpha2",
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{Name: "agent"},
 		},
@@ -362,7 +362,7 @@ func TestValidate_OrchestratorEnvEmpty(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: "v1alpha2",
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "agent",
@@ -384,7 +384,7 @@ func TestValidate_OrchestratorNoAuth(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: "v1alpha2",
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "agent",
@@ -404,7 +404,7 @@ func TestValidate_SessionIsolationWithWorkspace(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: "v1alpha2",
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "agent",
@@ -425,7 +425,7 @@ func TestValidate_SessionIsolationNoWorkspace(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: "v1alpha2",
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "agent",
@@ -446,7 +446,7 @@ func TestValidate_SessionIsolationNoWorkspace(t *testing.T) {
 func TestValidate_NoSpec(t *testing.T) {
 	t.Parallel()
 
-	m := &oac.Manifest{Version: "v99beta1"}
+	m := &oac.Manifest{}
 	err := m.Validate()
 	require.Error(t, err)
 	assert.ErrorIs(t, err, oac.ErrNoSpec)
@@ -458,8 +458,8 @@ func TestValidate_V1Alpha1_RequiresOrchestrator(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version:  "v1alpha1",
-		V1Alpha1: &oac.V1Alpha1Spec{Name: "agent"},
+		SpecVersion: oac.VersionV1Alpha1,
+		V1Alpha1:    &oac.V1Alpha1Spec{Name: "agent"},
 	}
 
 	err := m.Validate()
@@ -471,7 +471,7 @@ func TestValidate_V1Alpha1_OrchestratorEnvEmpty(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: "v1alpha1",
+		SpecVersion: oac.VersionV1Alpha1,
 		V1Alpha1: &oac.V1Alpha1Spec{
 			Name: "agent",
 			Orchestrator: &oac.OrchestratorSpec{
@@ -491,7 +491,7 @@ func TestValidate_V1Alpha1_OrchestratorNoAuth(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: "v1alpha1",
+		SpecVersion: oac.VersionV1Alpha1,
 		V1Alpha1: &oac.V1Alpha1Spec{
 			Name: "agent",
 			Orchestrator: &oac.OrchestratorSpec{

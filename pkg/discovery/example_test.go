@@ -25,7 +25,7 @@ func ExampleDiscover() {
 	}
 
 	for _, a := range agents {
-		fmt.Println(a.Name, a.Version)
+		fmt.Println(a.Name(), a.SpecVersion)
 	}
 }
 

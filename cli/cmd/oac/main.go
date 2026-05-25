@@ -132,7 +132,7 @@ func writeAgentsTable(agents []discovery.AgentImage) error {
 	fmt.Fprintln(w, "REFERENCE\tNAME\tVERSION\tDESCRIPTION")
 
 	for _, a := range agents {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", a.Reference, a.Name, a.Version, a.Description)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", a.Reference, a.Name(), a.SpecVersion, a.Description())
 	}
 
 	return w.Flush()

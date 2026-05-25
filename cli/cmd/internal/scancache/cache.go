@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	fileVersion = 1
+	fileVersion = 2
 	dirPerm     = 0o755
 )
 

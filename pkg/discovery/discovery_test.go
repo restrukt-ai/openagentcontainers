@@ -58,9 +58,9 @@ func push(t *testing.T, img v1.Image, ref string, opts []crane.Option) {
 
 func inf() *rate.Limiter { return rate.NewLimiter(rate.Inf, 0) }
 
-func oacLabels(version, name string) map[string]string {
+func oacLabels(version oac.SpecVersion, name string) map[string]string {
 	return map[string]string{
-		oac.LabelVersion: version,
+		oac.LabelVersion: string(version),
 		oac.LabelName:    name,
 	}
 }
@@ -189,12 +189,12 @@ func TestDiscoverFindsOACImage(t *testing.T) {
 	}
 
 	for _, a := range agents {
-		if a.Version != oac.VersionV1Alpha1 {
-			t.Errorf("agent %s: version = %q, want v1alpha1", a.Reference, a.Version)
+		if a.SpecVersion != oac.VersionV1Alpha1 {
+			t.Errorf("agent %s: version = %q, want v1alpha1", a.Reference, a.SpecVersion)
 		}
 
-		if a.Name != "my-agent" {
-			t.Errorf("agent %s: name = %q, want my-agent", a.Reference, a.Name)
+		if a.Name() != "my-agent" {
+			t.Errorf("agent %s: name = %q, want my-agent", a.Reference, a.Name())
 		}
 
 		if a.Reference == "" {
@@ -240,8 +240,8 @@ func TestDiscoverForceScansAllTags(t *testing.T) {
 		t.Fatalf("expected 1 agent (force mode), got %d", len(agents))
 	}
 
-	if agents[0].Version != oac.VersionV1Alpha1 {
-		t.Errorf("version: got %q, want v1alpha1", agents[0].Version)
+	if agents[0].SpecVersion != oac.VersionV1Alpha1 {
+		t.Errorf("version: got %q, want v1alpha1", agents[0].SpecVersion)
 	}
 }
 
@@ -403,7 +403,7 @@ func TestDiscoverOACAgentFields(t *testing.T) {
 	host, craneOpts := testRegistry(t)
 
 	labels := map[string]string{
-		oac.LabelVersion: oac.VersionV1Alpha1,
+		oac.LabelVersion: string(oac.VersionV1Alpha1),
 		oac.LabelName:    "test-agent",
 		"custom.label":   "value",
 	}
@@ -420,12 +420,12 @@ func TestDiscoverOACAgentFields(t *testing.T) {
 
 	a := agents[0]
 
-	if a.Version != oac.VersionV1Alpha1 {
-		t.Errorf("Version: got %q, want v1alpha1", a.Version)
+	if a.SpecVersion != oac.VersionV1Alpha1 {
+		t.Errorf("Version: got %q, want v1alpha1", a.SpecVersion)
 	}
 
-	if a.Name != "test-agent" {
-		t.Errorf("Name: got %q, want test-agent", a.Name)
+	if a.Name() != "test-agent" {
+		t.Errorf("Name: got %q, want test-agent", a.Name())
 	}
 
 	if a.Labels["custom.label"] != "value" {
@@ -484,13 +484,13 @@ func TestSearchFindsMatchingAgents(t *testing.T) {
 	host, craneOpts := testRegistry(t)
 
 	push(t, makeImage(t, map[string]string{
-		oac.LabelVersion:     oac.VersionV1Alpha1,
+		oac.LabelVersion:     string(oac.VersionV1Alpha1),
 		oac.LabelName:        "web-scraper",
 		oac.LabelDescription: "Scrapes the web for data",
 	}), host+"/web-scraper:latest", craneOpts)
 
 	push(t, makeImage(t, map[string]string{
-		oac.LabelVersion:     oac.VersionV1Alpha2,
+		oac.LabelVersion:     string(oac.VersionV1Alpha2),
 		oac.LabelName:        "sql-analyst",
 		oac.LabelDescription: "Analyses SQL databases",
 	}), host+"/sql-analyst:latest", craneOpts)

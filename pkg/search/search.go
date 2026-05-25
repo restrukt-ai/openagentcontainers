@@ -61,15 +61,15 @@ func filterAgents(agents []discovery.AgentImage, query string) []discovery.Agent
 // agentMatchesQuery returns true if the lowercased query is a substring of the
 // agent's name, version, description, or any label value.
 func agentMatchesQuery(a discovery.AgentImage, query string) bool {
-	if strings.Contains(strings.ToLower(a.Name), query) {
+	if strings.Contains(strings.ToLower(a.Name()), query) {
 		return true
 	}
 
-	if strings.Contains(strings.ToLower(a.Version), query) {
+	if strings.Contains(strings.ToLower(string(a.SpecVersion)), query) {
 		return true
 	}
 
-	if strings.Contains(strings.ToLower(a.Description), query) {
+	if strings.Contains(strings.ToLower(a.Description()), query) {
 		return true
 	}
 

@@ -40,24 +40,37 @@ var (
 	ErrSessionIsolation = errors.New("session.isolation cannot be combined with workspaces")
 )
 
+// ParseSpecVersion parses s as a known OAC spec version.
+// Returns [ErrUnsupportedVersion] when s is absent or unrecognised.
+func ParseSpecVersion(s string) (SpecVersion, error) {
+	switch SpecVersion(s) {
+	case VersionV1Alpha1, VersionV1Alpha2:
+		return SpecVersion(s), nil
+	default:
+		return "", fmt.Errorf("%w %q", ErrUnsupportedVersion, s)
+	}
+}
+
 // Parse parses OAC labels into a Manifest. It returns [ErrUnsupportedVersion]
 // (wrapped) when the version label is absent or unrecognised. It returns a JSON
 // decode error (not a sentinel) when an OAC-prefixed label maps to an unknown
 // struct field — use [errors.As] with a *[json.UnmarshalTypeError] target or check
 // the error text for field-level diagnosis.
 func Parse(labels map[string]string) (*Manifest, error) {
-	version := labels[LabelVersion]
-	m := &Manifest{Version: version}
+	sv, err := ParseSpecVersion(labels[LabelVersion])
+	if err != nil {
+		return nil, err
+	}
 
-	var err error
+	m := &Manifest{SpecVersion: sv}
 
-	switch version {
+	switch sv {
 	case VersionV1Alpha1:
 		m.V1Alpha1, err = parseV1Alpha1(labels)
 	case VersionV1Alpha2:
 		m.V1Alpha2, err = parseV1Alpha2(labels)
 	default:
-		err = fmt.Errorf("%w %q", ErrUnsupportedVersion, version)
+		// unreachable: ParseSpecVersion already validated sv
 	}
 
 	if err != nil {

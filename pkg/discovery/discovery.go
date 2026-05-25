@@ -143,25 +143,17 @@ func WithCraneOpts(opts ...crane.Option) Option {
 const tagLatest = "latest"
 
 // AgentImage represents an OAC-conformant image found during registry discovery.
-// Name, Description, and Version are populated from OAC image labels (oac.LabelName,
-// oac.LabelDescription, oac.LabelVersion). Reference is the fully-qualified image
-// ref including tag. Labels contains all OCI image config labels (not filtered to the
-// OAC prefix) and can be used for custom filtering or display.
+// The embedded [oac.Manifest] carries the parsed spec; call Name(), Description(),
+// and SpecVersion directly on AgentImage via promotion. Reference is the
+// fully-qualified image ref. Labels contains all OCI image config labels unfiltered.
 type AgentImage struct {
-	// Description is the agent's human-readable description, from [oac.LabelDescription].
-	Description string `json:"description,omitempty"`
+	oac.Manifest
+
 	// Labels contains all OCI image config labels, unfiltered. Use for custom filtering
 	// or to access non-OAC labels alongside the parsed manifest.
 	Labels map[string]string `json:"labels"`
-	// Manifest is the parsed OAC manifest. Non-nil for all images returned by Discover,
-	// since only successfully parsed images are included in results.
-	Manifest *oac.Manifest `json:"manifest,omitempty"`
-	// Name is the agent's name, from [oac.LabelName].
-	Name string `json:"name"`
 	// Reference is the fully-qualified image reference in the form "registry/repo:tag".
 	Reference string `json:"reference"`
-	// Version is the raw OAC version string, from [oac.LabelVersion] (e.g. "v1alpha1").
-	Version string `json:"version"`
 }
 
 // tagAction is the result of processing a cached tag.
@@ -526,8 +518,7 @@ func inspectImage(ref string, opts ...crane.Option) (AgentImage, bool, error) {
 		return AgentImage{}, false, err
 	}
 
-	version, ok := labels[oac.LabelVersion]
-	if !ok {
+	if _, ok := labels[oac.LabelVersion]; !ok {
 		return AgentImage{}, false, nil
 	}
 
@@ -537,12 +528,9 @@ func inspectImage(ref string, opts ...crane.Option) (AgentImage, bool, error) {
 	}
 
 	return AgentImage{
-		Reference:   ref,
-		Version:     version,
-		Name:        labels[oac.LabelName],
-		Description: labels[oac.LabelDescription],
-		Labels:      labels,
-		Manifest:    manifest,
+		Manifest:  *manifest,
+		Reference: ref,
+		Labels:    labels,
 	}, true, nil
 }
 

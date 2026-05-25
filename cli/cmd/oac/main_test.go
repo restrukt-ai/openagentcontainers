@@ -204,7 +204,13 @@ func TestWriteAgentsTable_WithData(t *testing.T) { //nolint:paralleltest // redi
 	os.Stdout = w
 
 	agents := []discovery.AgentImage{
-		{Name: "my-agent", Version: "v1alpha1", Reference: "reg/my-agent:latest"},
+		{
+			Manifest: oac.Manifest{
+				SpecVersion: oac.VersionV1Alpha1,
+				V1Alpha1:    &oac.V1Alpha1Spec{Name: "my-agent"},
+			},
+			Reference: "reg/my-agent:latest",
+		},
 	}
 	err := writeAgentsTable(agents)
 
@@ -228,7 +234,7 @@ func TestRunDiscover_JSONOutput(t *testing.T) { //nolint:paralleltest // redirec
 	host, craneOpts := testRegistry(t)
 
 	img := makeImage(t, map[string]string{
-		oac.LabelVersion: oac.VersionV1Alpha1,
+		oac.LabelVersion: string(oac.VersionV1Alpha1),
 		oac.LabelName:    "test-agent",
 	})
 	push(t, img, host+"/test-agent:latest", craneOpts)
@@ -262,7 +268,7 @@ func TestRunDiscover_TableOutput(t *testing.T) { //nolint:paralleltest // redire
 	host, craneOpts := testRegistry(t)
 
 	img := makeImage(t, map[string]string{
-		oac.LabelVersion: oac.VersionV1Alpha1,
+		oac.LabelVersion: string(oac.VersionV1Alpha1),
 		oac.LabelName:    "test-agent",
 	})
 	push(t, img, host+"/test-agent:latest", craneOpts)
@@ -304,7 +310,7 @@ func TestRunSearch_NoResults(t *testing.T) { //nolint:paralleltest // redirects 
 	host, craneOpts := testRegistry(t)
 
 	img := makeImage(t, map[string]string{
-		oac.LabelVersion: oac.VersionV1Alpha1,
+		oac.LabelVersion: string(oac.VersionV1Alpha1),
 		oac.LabelName:    "code-agent",
 	})
 	push(t, img, host+"/code-agent:latest", craneOpts)
@@ -335,7 +341,7 @@ func TestRunSearch_JSONOutput(t *testing.T) { //nolint:paralleltest // redirects
 	host, craneOpts := testRegistry(t)
 
 	img := makeImage(t, map[string]string{
-		oac.LabelVersion: oac.VersionV1Alpha1,
+		oac.LabelVersion: string(oac.VersionV1Alpha1),
 		oac.LabelName:    "code-agent",
 	})
 	push(t, img, host+"/code-agent:latest", craneOpts)
@@ -369,7 +375,7 @@ func TestRunSearch_TableOutput(t *testing.T) { //nolint:paralleltest // redirect
 	host, craneOpts := testRegistry(t)
 
 	img := makeImage(t, map[string]string{
-		oac.LabelVersion: oac.VersionV1Alpha1,
+		oac.LabelVersion: string(oac.VersionV1Alpha1),
 		oac.LabelName:    "code-agent",
 	})
 	push(t, img, host+"/code-agent:latest", craneOpts)

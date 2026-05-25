@@ -322,7 +322,7 @@ func TestEmitAgentContextCancelled(t *testing.T) {
 
 	out := make(chan AgentImage) // unbuffered, nobody reading
 
-	got := emitAgent(ctx, AgentImage{Name: "x"}, out)
+	got := emitAgent(ctx, AgentImage{}, out)
 	if !got {
 		t.Fatal("expected true (ctx.Done() path taken)")
 	}

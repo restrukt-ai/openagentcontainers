@@ -10,42 +10,54 @@ import (
 
 const agentSQLAnalyst = "sql-analyst"
 
-func agent(name, version, description string, extraLabels map[string]string) discovery.AgentImage {
+func agent(
+	name, description string,
+	sv oac.SpecVersion,
+	extraLabels map[string]string,
+) discovery.AgentImage {
 	labels := map[string]string{
-		oac.LabelVersion:     version,
+		oac.LabelVersion:     string(sv),
 		oac.LabelName:        name,
 		oac.LabelDescription: description,
 	}
 
 	maps.Copy(labels, extraLabels)
 
+	m, err := oac.Parse(labels)
+	if err != nil {
+		panic(err)
+	}
+
 	return discovery.AgentImage{
-		Name:        name,
-		Version:     version,
-		Description: description,
-		Labels:      labels,
-		Reference:   "reg.example.com/" + name + ":latest",
+		Manifest:  *m,
+		Labels:    labels,
+		Reference: "reg.example.com/" + name + ":latest",
 	}
 }
 
 var testAgents = []discovery.AgentImage{
 	agent(
 		"web-scraper",
-		"1.0",
 		"Scrapes websites for data",
+		oac.VersionV1Alpha1,
 		map[string]string{"runtime": "python"},
 	),
-	agent(agentSQLAnalyst, "2.3", "Analyses SQL databases", map[string]string{"runtime": "go"}),
+	agent(
+		agentSQLAnalyst,
+		"Analyses SQL databases",
+		oac.VersionV1Alpha2,
+		map[string]string{"runtime": "go"},
+	),
 	agent(
 		"image-tagger",
-		"0.9",
 		"Tags images using vision models",
+		oac.VersionV1Alpha1,
 		map[string]string{"runtime": "python"},
 	),
 	agent(
 		"data-pipeline",
-		"3.1",
 		"Orchestrates data pipelines",
+		oac.VersionV1Alpha2,
 		map[string]string{"domain": "etl"},
 	),
 }
@@ -63,7 +75,7 @@ func TestFilterAgentsMatchesName(t *testing.T) {
 	t.Parallel()
 
 	got := filterAgents(testAgents, "sql")
-	if len(got) != 1 || got[0].Name != agentSQLAnalyst {
+	if len(got) != 1 || got[0].Name() != agentSQLAnalyst {
 		t.Fatalf("name match: got %v", got)
 	}
 }
@@ -71,9 +83,10 @@ func TestFilterAgentsMatchesName(t *testing.T) {
 func TestFilterAgentsMatchesVersion(t *testing.T) {
 	t.Parallel()
 
-	got := filterAgents(testAgents, "2.3")
-	if len(got) != 1 || got[0].Name != agentSQLAnalyst {
-		t.Fatalf("version match: got %v", got)
+	// v1alpha2 appears in sql-analyst and data-pipeline
+	got := filterAgents(testAgents, "v1alpha2")
+	if len(got) != 2 {
+		t.Fatalf("version match: got %d agents, want 2", len(got))
 	}
 }
 
@@ -81,7 +94,7 @@ func TestFilterAgentsMatchesDescription(t *testing.T) {
 	t.Parallel()
 
 	got := filterAgents(testAgents, "vision")
-	if len(got) != 1 || got[0].Name != "image-tagger" {
+	if len(got) != 1 || got[0].Name() != "image-tagger" {
 		t.Fatalf("description match: got %v", got)
 	}
 }
@@ -90,7 +103,7 @@ func TestFilterAgentsMatchesLabelValue(t *testing.T) {
 	t.Parallel()
 
 	got := filterAgents(testAgents, "etl")
-	if len(got) != 1 || got[0].Name != "data-pipeline" {
+	if len(got) != 1 || got[0].Name() != "data-pipeline" {
 		t.Fatalf("label value match: got %v", got)
 	}
 }
@@ -108,7 +121,7 @@ func TestFilterAgentsCaseInsensitive(t *testing.T) {
 	t.Parallel()
 
 	got := filterAgents(testAgents, "SQL")
-	if len(got) != 1 || got[0].Name != agentSQLAnalyst {
+	if len(got) != 1 || got[0].Name() != agentSQLAnalyst {
 		t.Fatalf("case-insensitive: got %v", got)
 	}
 }
@@ -152,7 +165,7 @@ func TestFilterAgentsEmptyInput(t *testing.T) {
 func TestAgentMatchesQueryName(t *testing.T) {
 	t.Parallel()
 
-	a := agent("my-agent", "1.0", "", nil)
+	a := agent("my-agent", "", oac.VersionV1Alpha1, nil)
 	if !agentMatchesQuery(a, "my") {
 		t.Fatal("should match name")
 	}
@@ -161,8 +174,8 @@ func TestAgentMatchesQueryName(t *testing.T) {
 func TestAgentMatchesQueryVersion(t *testing.T) {
 	t.Parallel()
 
-	a := agent("agent", "1.2.3", "", nil)
-	if !agentMatchesQuery(a, "1.2") {
+	a := agent("agent", "", oac.VersionV1Alpha2, nil)
+	if !agentMatchesQuery(a, "alpha2") {
 		t.Fatal("should match version")
 	}
 }
@@ -170,7 +183,7 @@ func TestAgentMatchesQueryVersion(t *testing.T) {
 func TestAgentMatchesQueryDescription(t *testing.T) {
 	t.Parallel()
 
-	a := agent("agent", "1.0", "does cool things", nil)
+	a := agent("agent", "does cool things", oac.VersionV1Alpha1, nil)
 	if !agentMatchesQuery(a, "cool") {
 		t.Fatal("should match description")
 	}
@@ -179,7 +192,7 @@ func TestAgentMatchesQueryDescription(t *testing.T) {
 func TestAgentMatchesQueryLabelValue(t *testing.T) {
 	t.Parallel()
 
-	a := agent("agent", "1.0", "", map[string]string{"env": "production"})
+	a := agent("agent", "", oac.VersionV1Alpha1, map[string]string{"env": "production"})
 	if !agentMatchesQuery(a, "production") {
 		t.Fatal("should match label value")
 	}
@@ -188,7 +201,7 @@ func TestAgentMatchesQueryLabelValue(t *testing.T) {
 func TestAgentMatchesQueryNoMatch(t *testing.T) {
 	t.Parallel()
 
-	a := agent("agent", "1.0", "simple agent", nil)
+	a := agent("agent", "simple agent", oac.VersionV1Alpha1, nil)
 	if agentMatchesQuery(a, "xyzzy") {
 		t.Fatal("should not match")
 	}

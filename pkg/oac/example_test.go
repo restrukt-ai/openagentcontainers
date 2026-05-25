@@ -21,7 +21,7 @@ func ExampleParse() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(m.Version)
+	fmt.Println(m.SpecVersion)
 	fmt.Println(m.V1Alpha1.Name)
 	// Output:
 	// v1alpha1

@@ -27,24 +27,53 @@ const (
 // the OAC specification. Populated into [V1Alpha1Spec.Description] when present.
 const LabelDescription = "org.openagentcontainers.description"
 
-// VersionV1Alpha1 and VersionV1Alpha2 are the recognised values for [LabelVersion],
-// selecting which versioned spec [Parse] decodes the remaining labels into.
+// SpecVersion is the type for OAC spec version identifiers.
+type SpecVersion string
+
+// VersionV1Alpha1 and VersionV1Alpha2 are the recognised [SpecVersion] values for
+// [LabelVersion], selecting which versioned spec [Parse] decodes the remaining labels into.
 const (
-	VersionV1Alpha1 = "v1alpha1"
-	VersionV1Alpha2 = "v1alpha2"
+	VersionV1Alpha1 SpecVersion = "v1alpha1"
+	VersionV1Alpha2 SpecVersion = "v1alpha2"
 )
 
 // Manifest is the parsed representation of an OAC image's labels.
 // After a successful Parse call, exactly one of V1Alpha1 or V1Alpha2 will be
-// non-nil, determined by the version label. Check Version or test each field for nil.
+// non-nil, determined by the version label. Check SpecVersion or test each field for nil.
+// Call [Manifest.Name] and [Manifest.Description] to read those fields without switching
+// on SpecVersion yourself.
 type Manifest struct {
-	Version string `json:"version"`
+	SpecVersion SpecVersion `json:"spec_version"`
 
-	// V1Alpha1 is non-nil when Version is [VersionV1Alpha1]. Nil otherwise.
+	// V1Alpha1 is non-nil when SpecVersion is [VersionV1Alpha1]. Nil otherwise.
 	V1Alpha1 *V1Alpha1Spec `json:"v1alpha1,omitempty"`
 
-	// V1Alpha2 is non-nil when Version is [VersionV1Alpha2]. Nil otherwise.
+	// V1Alpha2 is non-nil when SpecVersion is [VersionV1Alpha2]. Nil otherwise.
 	V1Alpha2 *V1Alpha2Spec `json:"v1alpha2,omitempty"`
+}
+
+// Name returns the agent name from whichever versioned spec is populated, or "" if none.
+func (m *Manifest) Name() string {
+	switch {
+	case m.V1Alpha1 != nil:
+		return m.V1Alpha1.Name
+	case m.V1Alpha2 != nil:
+		return m.V1Alpha2.Name
+	default:
+		return ""
+	}
+}
+
+// Description returns the agent description from whichever versioned spec is populated, or "" if none.
+func (m *Manifest) Description() string {
+	switch {
+	case m.V1Alpha1 != nil:
+		return m.V1Alpha1.Description
+	case m.V1Alpha2 != nil:
+		return m.V1Alpha2.Description
+	default:
+		return ""
+	}
 }
 
 // specValidator is implemented by each versioned spec.
@@ -82,7 +111,7 @@ func (m *Manifest) Validate() error {
 	case m.V1Alpha2 != nil:
 		return validateSpec(m.V1Alpha2)
 	default:
-		return fmt.Errorf("%w %q", ErrNoSpec, m.Version)
+		return fmt.Errorf("%w %q", ErrNoSpec, m.SpecVersion)
 	}
 }
 

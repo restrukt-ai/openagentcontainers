@@ -135,7 +135,7 @@ func TestLint_MCPNoAuthMethod(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -157,7 +157,7 @@ func TestLint_MCPBearerTokenNoSource(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -198,7 +198,7 @@ func TestLint_MCPOAuthClientIDNoSource(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -225,7 +225,7 @@ func TestLint_MCPOAuthClientSecretNoSource(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -252,7 +252,7 @@ func TestLint_MCPDCRNoScopes(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -280,7 +280,7 @@ func TestLint_MCPDCRClientIDNoSource(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -337,7 +337,7 @@ func TestLint_OrchestratorBearerNoSource(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -362,7 +362,7 @@ func TestLint_OrchestratorMTLSCertNoSource(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -388,7 +388,7 @@ func TestLint_OrchestratorMTLSKeyNoSource(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -414,7 +414,7 @@ func TestLint_WorkspacePathEmpty(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -436,7 +436,7 @@ func TestLint_EventSchemaPathEmpty(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -458,7 +458,7 @@ func TestLint_EventSchemaMimetypeEmpty(t *testing.T) {
 	t.Parallel()
 
 	m := &oac.Manifest{
-		Version: oac.VersionV1Alpha2,
+		SpecVersion: oac.VersionV1Alpha2,
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
@@ -512,7 +512,7 @@ func TestLint_NoSpecReturnsNil(t *testing.T) {
 	t.Parallel()
 
 	// Manifest with neither V1Alpha1 nor V1Alpha2 populated — Lint returns nil, not an empty slice.
-	issues := lint.Lint(&oac.Manifest{Version: "v99"})
+	issues := lint.Lint(&oac.Manifest{})
 	assert.Nil(t, issues)
 }
 
@@ -535,7 +535,7 @@ func TestLint_EnvFile_TableDriven(t *testing.T) {
 			t.Parallel()
 
 			m := &oac.Manifest{
-				Version: oac.VersionV1Alpha2,
+				SpecVersion: oac.VersionV1Alpha2,
 				V1Alpha2: &oac.V1Alpha2Spec{
 					V1Alpha1Spec: oac.V1Alpha1Spec{
 						Name: "test-agent",
