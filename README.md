@@ -68,6 +68,20 @@ images whose name, version, description, or any label value contains the query s
 
 The `oac` CLI provides discovery and search over OCI registries.
 
+**Install with Go:**
+
+```sh
+go install github.com/restrukt-ai/openagentcontainers/cli/cmd/oac@latest
+```
+
+**Build from source:**
+
+```sh
+git clone https://github.com/restrukt-ai/openagentcontainers.git
+cd openagentcontainers
+task cli:build   # output: cli/bin/oac
+```
+
 ```sh
 # discover all OAC-conformant images in a registry
 oac discover registry.example.com
