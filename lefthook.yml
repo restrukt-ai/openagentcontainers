@@ -6,6 +6,8 @@ pre-commit:
       run: task lint
     test:
       run: task test
+    spec-build:
+      run: task spec:build
 
 commit-msg:
   commands:
