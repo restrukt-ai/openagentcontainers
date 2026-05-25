@@ -24,7 +24,7 @@ const (
 )
 
 // LabelDescription is an unofficial extension recognized by [Parse] but absent from
-// the OAC specification. Populated into [V1Alpha1Spec.Description] when present.
+// the OAC specification. Populated into the active spec's Description field when present.
 const LabelDescription = "org.openagentcontainers.description"
 
 // SpecVersion is the type for OAC spec version identifiers.
@@ -127,9 +127,9 @@ func validateOrchestrator(o *OrchestratorSpec) error {
 	return nil
 }
 
-// V1Alpha1Spec is the spec for OAC images declaring version "v1alpha1".
+// V1Alpha1Spec is the spec for OAC images declaring [VersionV1Alpha1].
 // Name and Orchestrator are required (enforced by Validate). All other fields are optional.
-// Description is populated from LabelDescription, which is an unofficial extension not defined
+// Description is populated from [LabelDescription], which is an unofficial extension not defined
 // by the OAC specification.
 type V1Alpha1Spec struct {
 	Name        string                   `json:"name"`
@@ -150,7 +150,7 @@ func (s *V1Alpha1Spec) validate() error {
 	return nil
 }
 
-// V1Alpha2Spec is the spec for OAC images declaring version "v1alpha2".
+// V1Alpha2Spec is the spec for OAC images declaring [VersionV1Alpha2].
 // It extends V1Alpha1Spec with session isolation support.
 // When Session.Isolation is true, the Workspace map must be empty; combining them causes
 // Validate to return ErrSessionIsolation.

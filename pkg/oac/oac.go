@@ -11,8 +11,8 @@ import (
 // Sentinel errors returned by [Parse] and [Manifest.Validate].
 // Use [errors.Is] to test for specific conditions.
 var (
-	// ErrUnsupportedVersion is returned by Parse when the version label is
-	// absent or not one of the known versions ("v1alpha1", "v1alpha2").
+	// ErrUnsupportedVersion is returned by [ParseSpecVersion] (and by [Parse]) when
+	// the version label is absent or not one of the known [SpecVersion] values.
 	ErrUnsupportedVersion = errors.New("unsupported spec version")
 
 	// ErrNoSpec is returned by Validate when neither V1Alpha1 nor V1Alpha2 is
