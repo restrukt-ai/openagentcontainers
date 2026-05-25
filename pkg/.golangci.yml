@@ -143,6 +143,16 @@ linters:
         - name: var-declaration
         - name: var-naming
         - name: waitgroup-by-value
+    godoclint:
+      default: all
+      options:
+        max-len:
+          length: 120
+        require-doc:
+          ignore-exported: false
+          ignore-unexported: true
+        start-with-name:
+          include-unexported: false
   exclusions:
     generated: lax
     presets:
@@ -155,6 +165,16 @@ linters:
           - gosec
         text: "G204"
         path: "_test\\.go$"
+      - linters:
+          - godoclint
+        text: "symbol should have a godoc"
+        path: "_test\\.go$"
+      - linters:
+          - errcheck
+        path: "example_test\\.go$"
+      - linters:
+          - testableexamples
+        path: "example_test\\.go$"
     paths:
       - third_party$
       - builtin$

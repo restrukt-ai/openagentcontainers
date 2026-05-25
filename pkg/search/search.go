@@ -1,4 +1,10 @@
-// Package search provides text-based filtering of discovered OAC agents.
+// Package search wraps [discovery.Discover] with a case-insensitive substring filter.
+//
+// Use [Search] to enumerate a registry and narrow results by name, version, description,
+// or any label value. Pass an empty query to return all agents.
+//
+// Construct opts with [discovery.NewOptions] exactly as you would for a direct
+// [discovery.Discover] call — the same rate-limiter, concurrency, and cache settings apply.
 package search
 
 import (
@@ -10,7 +16,15 @@ import (
 
 // Search discovers all OAC-conformant images in registry and returns those
 // whose name, version, description, or any label value contains query
-// (case-insensitive substring match). An empty query returns all agents.
+// (case-insensitive substring match). registry is the hostname of the OCI registry
+// to scan (e.g. "registry.example.com"). query is the case-insensitive substring
+// to match; pass an empty string to return all agents.
+//
+// Any error returned by [discovery.Discover] (network failure, context cancellation, etc.) is
+// returned unchanged; in that case the returned slice is nil.
+//
+// Note: the label search covers all OCI image labels, not just OAC-prefixed ones. Non-OAC
+// labels (e.g. org.opencontainers.image.created) may produce unexpected matches.
 func Search(
 	ctx context.Context,
 	registry, query string,

@@ -8,19 +8,43 @@ import (
 	"strings"
 )
 
-// Sentinel errors returned by Parse and Validate.
+// Sentinel errors returned by [Parse] and [Manifest.Validate].
+// Use [errors.Is] to test for specific conditions.
 var (
-	ErrUnsupportedVersion       = errors.New("unsupported spec version")
-	ErrNoSpec                   = errors.New("no spec populated for version")
-	ErrNameRequired             = errors.New("name is required")
-	ErrOrchestratorRequired     = errors.New("orchestrator is required")
-	ErrOrchestratorEnvRequired  = errors.New("orchestrator.env is required")
+	// ErrUnsupportedVersion is returned by Parse when the version label is
+	// absent or not one of the known versions ("v1alpha1", "v1alpha2").
+	ErrUnsupportedVersion = errors.New("unsupported spec version")
+
+	// ErrNoSpec is returned by Validate when neither V1Alpha1 nor V1Alpha2 is
+	// populated. This occurs when a Manifest is constructed manually without
+	// calling Parse.
+	ErrNoSpec = errors.New("no spec populated for version")
+
+	// ErrNameRequired is returned by Validate when the spec's Name field is empty.
+	ErrNameRequired = errors.New("name is required")
+
+	// ErrOrchestratorRequired is returned by Validate when no Orchestrator is set.
+	ErrOrchestratorRequired = errors.New("orchestrator is required")
+
+	// ErrOrchestratorEnvRequired is returned by Validate when Orchestrator.Env is empty.
+	ErrOrchestratorEnvRequired = errors.New("orchestrator.env is required")
+
+	// ErrOrchestratorAuthRequired is returned by Validate when the orchestrator
+	// declares neither Bearer nor MTLS authentication.
 	ErrOrchestratorAuthRequired = errors.New("orchestrator must declare at least one auth method")
-	ErrSessionIsolation         = errors.New("session.isolation cannot be combined with workspaces")
+
+	// ErrSessionIsolation is returned by Validate (v1alpha2 only) when
+	// Session.Isolation is true and one or more workspaces are declared.
+	// These are mutually exclusive: isolation provisions ephemeral volumes per
+	// session, making persistent workspace mounts undefined behaviour.
+	ErrSessionIsolation = errors.New("session.isolation cannot be combined with workspaces")
 )
 
-// Parse parses OAC labels into a Manifest, returning an error for unknown
-// versions or unrecognised OAC-prefixed labels.
+// Parse parses OAC labels into a Manifest. It returns [ErrUnsupportedVersion]
+// (wrapped) when the version label is absent or unrecognised. It returns a JSON
+// decode error (not a sentinel) when an OAC-prefixed label maps to an unknown
+// struct field — use [errors.As] with a *[json.UnmarshalTypeError] target or check
+// the error text for field-level diagnosis.
 func Parse(labels map[string]string) (*Manifest, error) {
 	version := labels[LabelVersion]
 	m := &Manifest{Version: version}

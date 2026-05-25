@@ -1,4 +1,19 @@
-// Package lint provides validation checks for OAC manifests beyond what Parse/Validate enforce.
+// Package lint provides advisory checks for OAC manifests beyond structural validation.
+//
+// Call [oac.Parse] and [oac.Manifest.Validate] first; [Lint] does not repeat those checks.
+// Each [Issue] carries a [Severity]: [SeverityError] means a required credential source is
+// absent; [SeverityWarning] means a best-practice recommendation was not met.
+//
+// Checks performed:
+//   - description: warns when no description is set
+//   - inference: warns when api_base/api_key are not declared together;
+//     warns when credential env/file sources are empty
+//   - mcp.<name>: warns when no auth method is configured; errors when
+//     bearer/oauth/dcr credential sources are empty; warns when DCR scopes are absent
+//   - orchestrator: warns when env or auth is missing; errors when credential
+//     sources are empty (orchestrator.mtls.ca is optional)
+//   - workspace.<name>: warns when path is empty
+//   - events.<name>: warns when schema path or mimetype is empty
 package lint
 
 import (
@@ -8,22 +23,38 @@ import (
 )
 
 // Severity indicates the severity of a lint issue.
+// SeverityError indicates a structural problem: a required credential source (env or
+// file) is missing and the image cannot function correctly. SeverityWarning indicates
+// a best-practice issue; the image may still work but is likely misconfigured.
 type Severity string
 
 const (
-	SeverityError   Severity = "error"
+	// SeverityError means a required credential source is absent;
+	// the image will likely fail to start correctly.
+	SeverityError Severity = "error"
+
+	// SeverityWarning means a best-practice recommendation was not followed;
+	// the image may still work but is likely misconfigured.
 	SeverityWarning Severity = "warning"
 )
 
 // Issue represents a single lint finding.
+// Field uses dot-notation matching the OAC label key suffix,
+// e.g. "inference.api_base", "mcp.calendar.bearer.token", "orchestrator.mtls.cert",
+// "workspace.data.path", "events.order-placed.schema.path".
 type Issue struct {
+	// Severity is the level of this finding ([SeverityError] or [SeverityWarning]).
 	Severity Severity `json:"severity"`
 	Field    string   `json:"field"`
-	Message  string   `json:"message"`
+	// Message is a human-readable description of the issue.
+	Message string `json:"message"`
 }
 
 // Lint runs lint checks against an already-parsed manifest.
-// Returns nil when there are no issues.
+// Call Lint after Parse and Validate. Returns nil when no issues are found.
+// m must not be nil. If m has no populated spec (both V1Alpha1 and V1Alpha2 are nil),
+// Lint returns nil without panicking. See the package documentation for the full list
+// of checks and their severities.
 func Lint(m *oac.Manifest) []Issue {
 	var issues []Issue
 

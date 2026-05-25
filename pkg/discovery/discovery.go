@@ -1,4 +1,22 @@
-// Package discovery provides discovery of OAC-conformant images in OCI registries.
+// Package discovery enumerates OCI registries to find images that declare OAC conformance
+// via the org.openagentcontainers.version label.
+//
+// Use [Discover] to scan an entire registry. Always construct [Options] via [NewOptions];
+// the zero value panics at runtime. At minimum, provide a rate limiter and at least one
+// worker:
+//
+//	opts := discovery.NewOptions(
+//		discovery.WithLimiter(rate.NewLimiter(rate.Every(time.Second), 10)),
+//		discovery.WithConcurrency(4),
+//	)
+//	agents, err := discovery.Discover(ctx, "registry.example.com", opts)
+//
+// To reduce network traffic on repeated scans, pass a [Cache] via [WithCache]: previously
+// seen content-addressed digests are not re-fetched, and repos confirmed non-OAC are
+// skipped entirely. Use [WithForce] to override this optimisation.
+//
+// [FetchLabels] is a lower-level helper for fetching raw OCI labels for a single known
+// image reference without scanning a full registry.
 package discovery
 
 import (
@@ -14,19 +32,35 @@ import (
 )
 
 // Cache is the interface for registry scan caches consumed by Discover.
-// scancache.Cache satisfies this interface.
+// Implement it to persist scan results between runs and avoid re-fetching image configs.
 type Cache interface {
+	// GetDigest returns the cached JSON for the given content-addressed digest.
+	// The bool is true when an entry exists. A nil byte slice with true means the
+	// image was previously confirmed non-OAC; callers should skip it.
 	GetDigest(digest string) ([]byte, bool)
+
+	// SetDigest stores agentJSON for digest. Pass nil agentJSON to record a confirmed
+	// non-OAC result so future scans can skip the image.
 	SetDigest(digest string, agentJSON []byte)
+
+	// GetLatestDigest returns the digest last seen for the repo's "latest" tag.
+	// Used to detect whether the tag has changed since the previous scan.
 	GetLatestDigest(repo string) (string, bool)
+
+	// SetLatestDigest records the current digest for the repo's "latest" tag.
 	SetLatestDigest(repo, digest string)
+
+	// Save persists the cache to durable storage. Call after Discover completes.
 	Save() error
 }
 
-// Option is a functional option for configuring Options.
+// Option is a functional option for [NewOptions]. Use the With* functions to construct options.
 type Option func(*Options)
 
 // Options configures a Discover or Search call.
+// Zero-value Options will panic at runtime: Limiter must be non-nil (see WithLimiter)
+// and Concurrency must be ≥1 (see WithConcurrency). Always construct via NewOptions.
+// Options must not be copied after construction.
 type Options struct {
 	concurrency int
 	maxRetries  int
@@ -37,6 +71,11 @@ type Options struct {
 }
 
 // NewOptions returns Options with all provided opts applied.
+// Defaults: Concurrency=0 (no workers — must call WithConcurrency), MaxRetries=0
+// (single attempt), Limiter=nil (panics — must call WithLimiter), Force=false,
+// Cache=nil (no caching).
+// If WithConcurrency is not called (or n=0), Discover starts no workers and returns an empty
+// result with no error — always call WithConcurrency with n ≥ 1.
 func NewOptions(opts ...Option) Options {
 	o := Options{}
 
@@ -47,12 +86,14 @@ func NewOptions(opts ...Option) Options {
 	return o
 }
 
-// Cache returns the configured cache.
+// Cache returns the configured cache, allowing callers to call Cache.Save after a Discover
+// run to persist results for the next scan.
 func (o Options) Cache() Cache {
 	return o.cache
 }
 
 // WithConcurrency sets the number of concurrent workers.
+// n must be ≥1. Passing 0 causes Discover to spawn no workers and return an empty result.
 func WithConcurrency(n int) Option {
 	return func(o *Options) {
 		o.concurrency = n
@@ -60,6 +101,7 @@ func WithConcurrency(n int) Option {
 }
 
 // WithMaxRetries sets the maximum number of retries on transient errors.
+// n=0 means a single attempt with no retries on 429/503 responses.
 func WithMaxRetries(n int) Option {
 	return func(o *Options) {
 		o.maxRetries = n
@@ -81,13 +123,17 @@ func WithCache(c Cache) Option {
 }
 
 // WithLimiter sets the rate limiter for registry requests.
+// Required. A nil limiter causes Discover and Search to panic.
+// For no rate limiting, use rate.NewLimiter(rate.Inf, 0).
 func WithLimiter(l *rate.Limiter) Option {
 	return func(o *Options) {
 		o.limiter = l
 	}
 }
 
-// WithCraneOpts appends crane options (e.g. crane.Insecure).
+// WithCraneOpts appends crane options used for all registry requests, e.g. crane.Insecure for
+// plain-HTTP registries or crane.WithAuthFromKeychain(authn.DefaultKeychain) for private
+// registries requiring authentication.
 func WithCraneOpts(opts ...crane.Option) Option {
 	return func(o *Options) {
 		o.craneOpts = append(o.craneOpts, opts...)
@@ -97,13 +143,25 @@ func WithCraneOpts(opts ...crane.Option) Option {
 const tagLatest = "latest"
 
 // AgentImage represents an OAC-conformant image found during registry discovery.
+// Name, Description, and Version are populated from OAC image labels (oac.LabelName,
+// oac.LabelDescription, oac.LabelVersion). Reference is the fully-qualified image
+// ref including tag. Labels contains all OCI image config labels (not filtered to the
+// OAC prefix) and can be used for custom filtering or display.
 type AgentImage struct {
-	Description string            `json:"description,omitempty"`
-	Labels      map[string]string `json:"labels"`
-	Manifest    *oac.Manifest     `json:"manifest,omitempty"`
-	Name        string            `json:"name"`
-	Reference   string            `json:"reference"`
-	Version     string            `json:"version"`
+	// Description is the agent's human-readable description, from [oac.LabelDescription].
+	Description string `json:"description,omitempty"`
+	// Labels contains all OCI image config labels, unfiltered. Use for custom filtering
+	// or to access non-OAC labels alongside the parsed manifest.
+	Labels map[string]string `json:"labels"`
+	// Manifest is the parsed OAC manifest. Non-nil for all images returned by Discover,
+	// since only successfully parsed images are included in results.
+	Manifest *oac.Manifest `json:"manifest,omitempty"`
+	// Name is the agent's name, from [oac.LabelName].
+	Name string `json:"name"`
+	// Reference is the fully-qualified image reference in the form "registry/repo:tag".
+	Reference string `json:"reference"`
+	// Version is the raw OAC version string, from [oac.LabelVersion] (e.g. "v1alpha1").
+	Version string `json:"version"`
 }
 
 // tagAction is the result of processing a cached tag.
@@ -126,12 +184,13 @@ type imageConfig struct {
 // Discover enumerates all repositories and tags in the given registry, returning
 // images that declare the org.openagentcontainers.version label.
 //
-// When force is false, a repo whose tagLatest tag lacks OAC labels is skipped
+// When WithForce() is not set, a repo whose `latest` tag lacks OAC labels is skipped
 // entirely — all other tags are assumed to be non-conformant too.
-// Set force to true to scan every tag regardless.
+// Use WithForce() to scan every tag regardless.
 //
-// Pass a non-nil cache to avoid re-fetching image configs for previously seen
-// digests. Pass nil to disable caching.
+// Cache behaviour is configured via WithCache. When a cache is present, images with
+// previously seen digests are not re-fetched, and repos confirmed non-OAC on the previous
+// scan are skipped. See [Cache] for the nil-agentJSON convention used to record non-OAC results.
 func Discover(ctx context.Context, registry string, opts Options) ([]AgentImage, error) {
 	var repos []string
 
@@ -441,7 +500,10 @@ func storeCacheResult(c Cache, digest string, agentJSON []byte) {
 	c.SetDigest(digest, agentJSON)
 }
 
-// FetchLabels fetches the OCI image config for ref and returns its labels.
+// FetchLabels fetches the OCI image config for ref and returns all its labels. Use this for a
+// single known image reference when you don't need registry-wide enumeration. ref may be any
+// form accepted by crane: "registry/repo:tag", "registry/repo@sha256:...", etc.
+// Pass the returned map to oac.Parse to decode OAC labels.
 func FetchLabels(ref string, opts ...crane.Option) (map[string]string, error) {
 	raw, err := crane.Config(ref, opts...)
 	if err != nil {

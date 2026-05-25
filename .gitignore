@@ -9,3 +9,4 @@ cli/.task/
 cli/node_modules/
 .task/
 *.out
+.playwright-mcp
