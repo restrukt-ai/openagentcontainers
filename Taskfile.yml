@@ -9,7 +9,9 @@ includes:
   pkg:
     taskfile: ./pkg/Taskfile.yml
     dir: ./pkg
-  spec: ./spec-site/Taskfile.yml
+  spec:
+    taskfile: ./spec-site/Taskfile.yml
+    dir: ./spec-site
 
 tasks:
   docs:
