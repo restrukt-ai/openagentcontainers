@@ -1,0 +1,36 @@
+version: "3"
+
+tasks:
+  _setup:
+    internal: true
+    desc: Sync dependencies with uv
+    cmds:
+      - uv sync
+    generates:
+      - .venv/bin/mkdocs
+
+  serve:
+    desc: Serve the docs locally with live reload
+    deps: [_setup]
+    cmds:
+      - uv run mkdocs serve --dev-addr localhost:8889 --watch .
+
+  build:
+    desc: Build the static site to dist/
+    deps: [_setup]
+    cmds:
+      - uv run mkdocs build
+    generates:
+      - dist/
+
+  deploy:preview:
+    desc: Build and deploy to Firebase preview channel
+    cmds:
+      - task: build
+      - firebase hosting:channel:deploy preview --project $FIREBASE_PROJECT
+
+  deploy:production:
+    desc: Build and deploy to Firebase production hosting
+    cmds:
+      - task: build
+      - firebase deploy --only hosting --project $FIREBASE_PROJECT

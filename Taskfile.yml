@@ -5,6 +5,7 @@ dotenv: ["spec-site/.env"]
 includes:
   cli: ./cli/Taskfile.yml
   pkg: ./pkg/Taskfile.yml
+  spec: ./spec-site/Taskfile.yml
 
 tasks:
   docs:
@@ -12,40 +13,20 @@ tasks:
     cmds:
       - pkgsite .
 
-  setup:
-    desc: First-time dev setup — sync dependencies with uv
-    dir: spec-site
-    cmds:
-      - uv sync
-    generates:
-      - spec-site/.venv/bin/mkdocs
+  lint:
+    desc: Run all lints across cli and pkg
+    deps:
+      - cli:lint
+      - pkg:lint
 
-  serve:
-    desc: Serve the docs locally with live reload
-    dir: spec-site
-    deps: [setup]
-    cmds:
-      - uv run mkdocs serve --dev-addr localhost:8889 --watch .
+  test:
+    desc: Run all tests across cli and pkg
+    deps:
+      - cli:test
+      - pkg:test
 
-  build:
-    desc: Build the static site to spec-site/dist/
-    dir: spec-site
-    deps: [setup]
-    cmds:
-      - uv run mkdocs build
-    generates:
-      - spec-site/dist/
-
-  deploy:preview:
-    desc: Build and deploy to Firebase preview channel
-    dir: spec-site
-    cmds:
-      - task: build
-      - firebase hosting:channel:deploy preview --project $FIREBASE_PROJECT
-
-  deploy:production:
-    desc: Build and deploy to Firebase production hosting
-    dir: spec-site
-    cmds:
-      - task: build
-      - firebase deploy --only hosting --project $FIREBASE_PROJECT
+  tidy:
+    desc: Tidy go.mod and go.sum across cli and pkg
+    deps:
+      - cli:tidy
+      - pkg:tidy
