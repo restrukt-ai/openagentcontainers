@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/restrukt-ai/openagentcontainers/pkg/lint"
+	"github.com/restrukt-ai/openagentcontainers/pkg/check"
 )
 
 // --- parseLabelPairs ---
@@ -160,14 +160,14 @@ func TestParseDockerfileLabels_FileNotFound(t *testing.T) {
 func TestDetectInputMode_DockerfileFlag(t *testing.T) {
 	t.Parallel()
 
-	mode := detectInputMode("anything", lintFlags{dockerfile: true})
+	mode := detectInputMode("anything", checkFlags{dockerfile: true})
 	assert.Equal(t, modeDockerfile, mode)
 }
 
 func TestDetectInputMode_ImageFlag(t *testing.T) {
 	t.Parallel()
 
-	mode := detectInputMode("anything", lintFlags{image: true})
+	mode := detectInputMode("anything", checkFlags{image: true})
 	assert.Equal(t, modeImage, mode)
 }
 
@@ -178,46 +178,46 @@ func TestDetectInputMode_ExistingFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, f.Close())
 
-	mode := detectInputMode(f.Name(), lintFlags{})
+	mode := detectInputMode(f.Name(), checkFlags{})
 	assert.Equal(t, modeDockerfile, mode)
 }
 
 func TestDetectInputMode_AbsPathNoFile(t *testing.T) {
 	t.Parallel()
 
-	mode := detectInputMode("/nonexistent/path/Dockerfile", lintFlags{})
+	mode := detectInputMode("/nonexistent/path/Dockerfile", checkFlags{})
 	assert.Equal(t, modeDockerfile, mode)
 }
 
 func TestDetectInputMode_RelativePath(t *testing.T) {
 	t.Parallel()
 
-	mode := detectInputMode("./examples/coding-agent/Dockerfile", lintFlags{})
+	mode := detectInputMode("./examples/coding-agent/Dockerfile", checkFlags{})
 	assert.Equal(t, modeDockerfile, mode)
 }
 
 func TestDetectInputMode_ImageRef(t *testing.T) {
 	t.Parallel()
 
-	mode := detectInputMode("registry.example.com/myagent:latest", lintFlags{})
+	mode := detectInputMode("registry.example.com/myagent:latest", checkFlags{})
 	assert.Equal(t, modeImage, mode)
 }
 
-// --- writeLintTable ---
+// --- writeCheckTable ---
 
-func TestWriteLintTable(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
+func TestWriteCheckTable(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
 	r, w, pipeErr := os.Pipe()
 	require.NoError(t, pipeErr)
 
 	old := os.Stdout
 	os.Stdout = w
 
-	issues := []lint.Issue{{
-		Severity: lint.SeverityWarning,
+	issues := []check.Issue{{
+		Severity: check.SeverityWarning,
 		Field:    "description",
 		Message:  "description is not set",
 	}}
-	err := writeLintTable(issues)
+	err := writeCheckTable(issues)
 
 	w.Close()
 
@@ -233,26 +233,26 @@ func TestWriteLintTable(t *testing.T) { //nolint:paralleltest // redirects os.St
 	assert.Contains(t, buf.String(), "description")
 }
 
-// --- runLint ---
+// --- runCheck ---
 
-func TestRunLint_MutuallyExclusive(t *testing.T) {
+func TestRunCheck_MutuallyExclusive(t *testing.T) {
 	t.Parallel()
 
-	f := lintFlags{dockerfile: true, image: true}
-	err := runLint(nil, []string{"anything"}, f)
+	f := checkFlags{dockerfile: true, image: true}
+	err := runCheck(nil, []string{"anything"}, f)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "mutually exclusive")
 }
 
-func TestRunLint_DockerfileReadError(t *testing.T) {
+func TestRunCheck_DockerfileReadError(t *testing.T) {
 	t.Parallel()
 
-	f := lintFlags{dockerfile: true}
-	err := runLint(nil, []string{"nonexistent-path"}, f)
+	f := checkFlags{dockerfile: true}
+	err := runCheck(nil, []string{"nonexistent-path"}, f)
 	require.Error(t, err)
 }
 
-func TestRunLint_OACParseError(t *testing.T) {
+func TestRunCheck_OACParseError(t *testing.T) {
 	t.Parallel()
 
 	path := writeDockerfile(t, `FROM alpine
@@ -260,29 +260,33 @@ LABEL org.openagentcontainers.version="v99beta1"
 LABEL org.openagentcontainers.name="agent"
 `)
 
-	f := lintFlags{dockerfile: true}
-	err := runLint(nil, []string{path}, f)
+	f := checkFlags{dockerfile: true}
+	err := runCheck(nil, []string{path}, f)
 	require.Error(t, err)
 }
 
-func TestRunLint_NoIssues(t *testing.T) {
+func TestRunCheck_NoIssues(t *testing.T) {
 	t.Parallel()
 
 	path := writeDockerfile(t, `FROM alpine
 LABEL org.openagentcontainers.version="v1alpha2"
 LABEL org.openagentcontainers.name="agent"
 LABEL org.openagentcontainers.description="something"
+LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_URL"
+LABEL org.openagentcontainers.orchestrator.bearer.token.env="ORCHESTRATOR_TOKEN"
 `)
 
-	f := lintFlags{dockerfile: true}
-	err := runLint(nil, []string{path}, f)
+	f := checkFlags{dockerfile: true}
+	err := runCheck(nil, []string{path}, f)
 	require.NoError(t, err)
 }
 
-func TestRunLint_TableOutput(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
+func TestRunCheck_TableOutput(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
 	path := writeDockerfile(t, `FROM alpine
 LABEL org.openagentcontainers.version="v1alpha2"
 LABEL org.openagentcontainers.name="agent"
+LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_URL"
+LABEL org.openagentcontainers.orchestrator.bearer.token.env="ORCHESTRATOR_TOKEN"
 `)
 
 	r, w, pipeErr := os.Pipe()
@@ -291,8 +295,8 @@ LABEL org.openagentcontainers.name="agent"
 	old := os.Stdout
 	os.Stdout = w
 
-	f := lintFlags{dockerfile: true, outputJSON: false}
-	err := runLint(nil, []string{path}, f)
+	f := checkFlags{dockerfile: true, outputJSON: false}
+	err := runCheck(nil, []string{path}, f)
 
 	w.Close()
 
@@ -308,7 +312,7 @@ LABEL org.openagentcontainers.name="agent"
 	assert.Contains(t, buf.String(), "description")
 }
 
-func TestRunLint_JSONOutput(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
+func TestRunCheck_JSONOutput(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
 	path := writeDockerfile(t, `FROM alpine
 LABEL org.openagentcontainers.version="v1alpha2"
 LABEL org.openagentcontainers.name="agent"
@@ -320,8 +324,8 @@ LABEL org.openagentcontainers.name="agent"
 	old := os.Stdout
 	os.Stdout = w
 
-	f := lintFlags{dockerfile: true, outputJSON: true}
-	err := runLint(nil, []string{path}, f)
+	f := checkFlags{dockerfile: true, outputJSON: true}
+	err := runCheck(nil, []string{path}, f)
 
 	w.Close()
 
@@ -340,10 +344,10 @@ LABEL org.openagentcontainers.name="agent"
 	assert.Equal(t, "warning", issues[0]["severity"])
 }
 
-func TestRunLint_ImageModeError(t *testing.T) {
+func TestRunCheck_ImageModeError(t *testing.T) {
 	t.Parallel()
 
-	f := lintFlags{image: true}
-	err := runLint(nil, []string{"localhost:1/repo:latest"}, f)
+	f := checkFlags{image: true}
+	err := runCheck(nil, []string{"localhost:1/repo:latest"}, f)
 	require.Error(t, err)
 }

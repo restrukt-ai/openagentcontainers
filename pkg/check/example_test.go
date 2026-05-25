@@ -1,14 +1,14 @@
-package lint_test
+package check_test
 
 import (
 	"fmt"
 	"log"
 
-	"github.com/restrukt-ai/openagentcontainers/pkg/lint"
+	"github.com/restrukt-ai/openagentcontainers/pkg/check"
 	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
-func ExampleLint_error() {
+func ExampleCheck_error() {
 	// An MCP server declared with no credential source produces a SeverityError.
 	labels := map[string]string{
 		"org.openagentcontainers.version":                       "v1alpha1",
@@ -24,7 +24,7 @@ func ExampleLint_error() {
 		log.Fatal(err)
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 	for _, issue := range issues {
 		fmt.Printf("%s: %s: %s\n", issue.Severity, issue.Field, issue.Message)
 	}
@@ -32,7 +32,7 @@ func ExampleLint_error() {
 	// error: mcp.calendar.bearer.token: neither env nor file set; no credential source
 }
 
-func ExampleLint() {
+func ExampleCheck() {
 	labels := map[string]string{
 		"org.openagentcontainers.version":                       "v1alpha1",
 		"org.openagentcontainers.name":                          "my-agent",
@@ -46,7 +46,7 @@ func ExampleLint() {
 		log.Fatal(err)
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	for _, issue := range issues {
 		fmt.Printf("%s: %s: %s\n", issue.Severity, issue.Field, issue.Message)

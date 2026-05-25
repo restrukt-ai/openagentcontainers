@@ -1,4 +1,4 @@
-package lint_test
+package check_test
 
 import (
 	"maps"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/restrukt-ai/openagentcontainers/pkg/lint"
+	"github.com/restrukt-ai/openagentcontainers/pkg/check"
 	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
@@ -36,7 +36,7 @@ func merge(base, extra map[string]string) map[string]string {
 	return out
 }
 
-func findIssue(issues []lint.Issue, field string) *lint.Issue {
+func findIssue(issues []check.Issue, field string) *check.Issue {
 	for i := range issues {
 		if issues[i].Field == field {
 			return &issues[i]
@@ -58,18 +58,18 @@ func TestLint_Clean(t *testing.T) {
 		"org.openagentcontainers.orchestrator.bearer.token.env":     "ORCH_TOKEN",
 	})
 
-	issues := lint.Lint(mustParse(t, labels))
+	issues := check.Check(mustParse(t, labels))
 	assert.Empty(t, issues)
 }
 
 func TestLint_DescriptionEmpty(t *testing.T) {
 	t.Parallel()
 
-	issues := lint.Lint(mustParse(t, baseLabels()))
+	issues := check.Check(mustParse(t, baseLabels()))
 
 	iss := findIssue(issues, "description")
 	require.NotNil(t, iss, "expected description warning")
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
 }
 
 func TestLint_InferenceAPIBaseWithoutAPIKey(t *testing.T) {
@@ -79,11 +79,11 @@ func TestLint_InferenceAPIBaseWithoutAPIKey(t *testing.T) {
 		"org.openagentcontainers.inference.api_base.env": "OPENAI_BASE_URL",
 	})
 
-	issues := lint.Lint(mustParse(t, labels))
+	issues := check.Check(mustParse(t, labels))
 
 	iss := findIssue(issues, "inference.api_key")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
 }
 
 func TestLint_InferenceAPIKeyWithoutAPIBase(t *testing.T) {
@@ -93,11 +93,11 @@ func TestLint_InferenceAPIKeyWithoutAPIBase(t *testing.T) {
 		"org.openagentcontainers.inference.api_key.env": "OPENAI_API_KEY",
 	})
 
-	issues := lint.Lint(mustParse(t, labels))
+	issues := check.Check(mustParse(t, labels))
 
 	iss := findIssue(issues, "inference.api_base")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
 }
 
 func TestLint_InferenceNoTypes(t *testing.T) {
@@ -108,11 +108,11 @@ func TestLint_InferenceNoTypes(t *testing.T) {
 		"org.openagentcontainers.inference.api_key.env":  "OPENAI_API_KEY",
 	})
 
-	issues := lint.Lint(mustParse(t, labels))
+	issues := check.Check(mustParse(t, labels))
 
 	iss := findIssue(issues, "inference")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
 }
 
 func TestLint_InferenceClean(t *testing.T) {
@@ -124,7 +124,7 @@ func TestLint_InferenceClean(t *testing.T) {
 		"org.openagentcontainers.inference.chat-completions.models": "gpt-4o",
 	})
 
-	issues := lint.Lint(mustParse(t, labels))
+	issues := check.Check(mustParse(t, labels))
 
 	assert.Nil(t, findIssue(issues, "inference"))
 	assert.Nil(t, findIssue(issues, "inference.api_base"))
@@ -146,11 +146,11 @@ func TestLint_MCPNoAuthMethod(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "mcp.srv")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
 }
 
 func TestLint_MCPBearerTokenNoSource(t *testing.T) {
@@ -172,11 +172,11 @@ func TestLint_MCPBearerTokenNoSource(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "mcp.srv.bearer.token")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityError, iss.Severity)
+	assert.Equal(t, check.SeverityError, iss.Severity)
 	assert.Contains(t, iss.Message, "no credential source")
 }
 
@@ -188,7 +188,7 @@ func TestLint_MCPBearerBothEnvAndFile(t *testing.T) {
 		"org.openagentcontainers.mcp.srv.bearer.token.file": "/run/secrets/token",
 	})
 
-	issues := lint.Lint(mustParse(t, labels))
+	issues := check.Check(mustParse(t, labels))
 
 	// both is valid per spec §5.3 — no issue on this field
 	assert.Nil(t, findIssue(issues, "mcp.srv.bearer.token"))
@@ -214,11 +214,11 @@ func TestLint_MCPOAuthClientIDNoSource(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "mcp.srv.oauth.client_id")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityError, iss.Severity)
+	assert.Equal(t, check.SeverityError, iss.Severity)
 }
 
 func TestLint_MCPOAuthClientSecretNoSource(t *testing.T) {
@@ -241,11 +241,11 @@ func TestLint_MCPOAuthClientSecretNoSource(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "mcp.srv.oauth.client_secret")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityError, iss.Severity)
+	assert.Equal(t, check.SeverityError, iss.Severity)
 }
 
 func TestLint_MCPDCRNoScopes(t *testing.T) {
@@ -269,11 +269,11 @@ func TestLint_MCPDCRNoScopes(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "mcp.srv.dcr.scopes")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
 }
 
 func TestLint_MCPDCRClientIDNoSource(t *testing.T) {
@@ -297,11 +297,11 @@ func TestLint_MCPDCRClientIDNoSource(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "mcp.srv.dcr.client_id")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityError, iss.Severity)
+	assert.Equal(t, check.SeverityError, iss.Severity)
 }
 
 func TestLint_OrchestratorEnvEmpty(t *testing.T) {
@@ -312,11 +312,11 @@ func TestLint_OrchestratorEnvEmpty(t *testing.T) {
 		"org.openagentcontainers.orchestrator.bearer.token.env": "ORCH_TOKEN",
 	})
 
-	issues := lint.Lint(mustParse(t, labels))
+	issues := check.Check(mustParse(t, labels))
 
 	iss := findIssue(issues, "orchestrator.env")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityError, iss.Severity)
 }
 
 func TestLint_OrchestratorNoAuth(t *testing.T) {
@@ -326,11 +326,11 @@ func TestLint_OrchestratorNoAuth(t *testing.T) {
 		"org.openagentcontainers.orchestrator.env": "ORCHESTRATOR_ADDR",
 	})
 
-	issues := lint.Lint(mustParse(t, labels))
+	issues := check.Check(mustParse(t, labels))
 
 	iss := findIssue(issues, "orchestrator")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityError, iss.Severity)
 }
 
 func TestLint_OrchestratorBearerNoSource(t *testing.T) {
@@ -351,11 +351,11 @@ func TestLint_OrchestratorBearerNoSource(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "orchestrator.bearer.token")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityError, iss.Severity)
+	assert.Equal(t, check.SeverityError, iss.Severity)
 }
 
 func TestLint_OrchestratorMTLSCertNoSource(t *testing.T) {
@@ -377,11 +377,11 @@ func TestLint_OrchestratorMTLSCertNoSource(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "orchestrator.mtls.cert")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityError, iss.Severity)
+	assert.Equal(t, check.SeverityError, iss.Severity)
 }
 
 func TestLint_OrchestratorMTLSKeyNoSource(t *testing.T) {
@@ -403,11 +403,11 @@ func TestLint_OrchestratorMTLSKeyNoSource(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "orchestrator.mtls.key")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityError, iss.Severity)
+	assert.Equal(t, check.SeverityError, iss.Severity)
 }
 
 func TestLint_WorkspacePathEmpty(t *testing.T) {
@@ -425,11 +425,11 @@ func TestLint_WorkspacePathEmpty(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "workspace.code.path")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
 }
 
 func TestLint_EventSchemaPathEmpty(t *testing.T) {
@@ -447,11 +447,11 @@ func TestLint_EventSchemaPathEmpty(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "events.start.schema.path")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
 }
 
 func TestLint_EventSchemaMimetypeEmpty(t *testing.T) {
@@ -469,11 +469,11 @@ func TestLint_EventSchemaMimetypeEmpty(t *testing.T) {
 		},
 	}
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "events.start.schema.mimetype")
 	require.NotNil(t, iss)
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
 }
 
 func TestLint_MultipleIssuesAdditive(t *testing.T) {
@@ -485,7 +485,7 @@ func TestLint_MultipleIssuesAdditive(t *testing.T) {
 		"org.openagentcontainers.orchestrator.env":       "ORCHESTRATOR_ADDR",
 	})
 
-	issues := lint.Lint(mustParse(t, labels))
+	issues := check.Check(mustParse(t, labels))
 
 	assert.Greater(t, len(issues), 1)
 }
@@ -501,19 +501,74 @@ func TestLint_V1Alpha1Dispatch(t *testing.T) {
 	m := mustParse(t, labels)
 	require.NotNil(t, m.V1Alpha1)
 
-	issues := lint.Lint(m)
+	issues := check.Check(m)
 
 	iss := findIssue(issues, "description")
 	require.NotNil(t, iss, "expected description warning for v1alpha1")
-	assert.Equal(t, lint.SeverityWarning, iss.Severity)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
 }
 
 func TestLint_NoSpecReturnsNil(t *testing.T) {
 	t.Parallel()
 
-	// Manifest with neither V1Alpha1 nor V1Alpha2 populated — Lint returns nil, not an empty slice.
-	issues := lint.Lint(&oac.Manifest{})
+	// Manifest with neither V1Alpha1 nor V1Alpha2 populated — Check returns nil, not an empty slice.
+	issues := check.Check(&oac.Manifest{})
 	assert.Nil(t, issues)
+}
+
+func TestCheck_NameEmpty(t *testing.T) {
+	t.Parallel()
+
+	m := &oac.Manifest{
+		SpecVersion: oac.VersionV1Alpha2,
+		V1Alpha2:    &oac.V1Alpha2Spec{},
+	}
+
+	issues := check.Check(m)
+
+	iss := findIssue(issues, "name")
+	require.NotNil(t, iss)
+	assert.Equal(t, check.SeverityError, iss.Severity)
+}
+
+func TestCheck_OrchestratorRequired(t *testing.T) {
+	t.Parallel()
+
+	m := &oac.Manifest{
+		SpecVersion: oac.VersionV1Alpha2,
+		V1Alpha2: &oac.V1Alpha2Spec{
+			V1Alpha1Spec: oac.V1Alpha1Spec{Name: "agent"},
+		},
+	}
+
+	issues := check.Check(m)
+
+	iss := findIssue(issues, "orchestrator")
+	require.NotNil(t, iss)
+	assert.Equal(t, check.SeverityError, iss.Severity)
+}
+
+func TestCheck_SessionIsolation(t *testing.T) {
+	t.Parallel()
+
+	m := &oac.Manifest{
+		SpecVersion: oac.VersionV1Alpha2,
+		V1Alpha2: &oac.V1Alpha2Spec{
+			V1Alpha1Spec: oac.V1Alpha1Spec{
+				Name: "agent",
+				Workspace: map[string]oac.WorkspaceSpec{
+					"code": {Path: "/workspace"},
+				},
+			},
+			Session: oac.SessionSpec{Isolation: true},
+		},
+	}
+
+	issues := check.Check(m)
+
+	iss := findIssue(issues, "session.isolation")
+	require.NotNil(t, iss)
+	assert.Equal(t, check.SeverityError, iss.Severity)
 }
 
 func TestLint_EnvFile_TableDriven(t *testing.T) {
@@ -548,12 +603,12 @@ func TestLint_EnvFile_TableDriven(t *testing.T) {
 				},
 			}
 
-			issues := lint.Lint(m)
+			issues := check.Check(m)
 			iss := findIssue(issues, "mcp.srv.bearer.token")
 
 			if tt.expectError {
 				require.NotNil(t, iss, "expected error issue for %q", tt.name)
-				assert.Equal(t, lint.SeverityError, iss.Severity)
+				assert.Equal(t, check.SeverityError, iss.Severity)
 			} else {
 				assert.Nil(t, iss, "unexpected issue for %q: %v", tt.name, iss)
 			}

@@ -1,20 +1,22 @@
-// Package lint provides advisory checks for OAC manifests beyond structural validation.
+// Package check provides checks for OAC manifests.
 //
-// Call [oac.Parse] and [oac.Manifest.Validate] first; [Lint] does not repeat those checks.
-// Each [Issue] carries a [Severity]: [SeverityError] means a required credential source is
+// Call [oac.Parse] first; [Check] performs all validation and advisory checks in a single pass.
+// Each [Issue] carries a [Severity]: [SeverityError] means a required field or credential source is
 // absent; [SeverityWarning] means a best-practice recommendation was not met.
 //
 // Checks performed:
+//   - name: errors when name is not set
 //   - description: warns when no description is set
 //   - inference: warns when api_base/api_key are not declared together;
 //     warns when credential env/file sources are empty
 //   - mcp.<name>: warns when no auth method is configured; errors when
 //     bearer/oauth/dcr credential sources are empty; warns when DCR scopes are absent
-//   - orchestrator: warns when env or auth is missing; errors when credential
-//     sources are empty (orchestrator.mtls.ca is optional)
+//   - orchestrator: errors when orchestrator is nil, env is missing, or auth is missing;
+//     errors when credential sources are empty (orchestrator.mtls.ca is optional)
+//   - session.isolation: errors when combined with workspaces (v1alpha2 only)
 //   - workspace.<name>: warns when path is empty
 //   - events.<name>: warns when schema path or mimetype is empty
-package lint
+package check
 
 import (
 	"slices"
@@ -23,13 +25,13 @@ import (
 )
 
 // Severity indicates the severity of a lint issue.
-// SeverityError indicates a structural problem: a required credential source (env or
-// file) is missing and the image cannot function correctly. SeverityWarning indicates
-// a best-practice issue; the image may still work but is likely misconfigured.
+// SeverityError indicates a structural problem: a required field or credential source (env or
+// file) is missing and the image cannot function correctly. SeverityWarning indicates a
+// best-practice issue; the image may still work but is likely misconfigured.
 type Severity string
 
 const (
-	// SeverityError means a required credential source is absent;
+	// SeverityError means a required field or credential source is absent;
 	// the image will likely fail to start correctly.
 	SeverityError Severity = "error"
 
@@ -50,12 +52,12 @@ type Issue struct {
 	Message string `json:"message"`
 }
 
-// Lint runs lint checks against an already-parsed manifest.
-// Call Lint after Parse and Validate. Returns nil when no issues are found.
+// Check runs all validation and advisory checks against an already-parsed manifest.
+// Call Check after Parse. Returns nil when no issues are found.
 // m must not be nil. If m has no populated spec (both V1Alpha1 and V1Alpha2 are nil),
-// Lint returns nil without panicking. See the package documentation for the full list
+// Check returns nil without panicking. See the package documentation for the full list
 // of checks and their severities.
-func Lint(m *oac.Manifest) []Issue {
+func Check(m *oac.Manifest) []Issue {
 	var issues []Issue
 
 	var spec *oac.V1Alpha1Spec
@@ -65,22 +67,40 @@ func Lint(m *oac.Manifest) []Issue {
 		spec = m.V1Alpha1
 	case m.V1Alpha2 != nil:
 		spec = &m.V1Alpha2.V1Alpha1Spec
+		if m.V1Alpha2.Session.Isolation && len(m.V1Alpha2.Workspace) > 0 {
+			issues = append(issues, Issue{
+				Severity: SeverityError,
+				Field:    "session.isolation",
+				Message:  "session.isolation cannot be combined with workspaces",
+			})
+		}
 	default:
 		return nil
 	}
 
-	lintSpec(spec, &issues)
+	checkSpec(spec, &issues)
 
 	return issues
 }
 
-func lintSpec(spec *oac.V1Alpha1Spec, issues *[]Issue) {
+func checkSpec(spec *oac.V1Alpha1Spec, issues *[]Issue) {
+	checkName(spec.Name, issues)
 	checkDescription(spec.Description, issues)
 	checkInference(spec.Inference, issues)
 	checkMCPs(spec.MCP, issues)
 	checkOrchestrator(spec.Orchestrator, issues)
 	checkWorkspaces(spec.Workspace, issues)
 	checkEvents(spec.Events, issues)
+}
+
+func checkName(name string, issues *[]Issue) {
+	if name == "" {
+		*issues = append(*issues, Issue{
+			Severity: SeverityError,
+			Field:    "name",
+			Message:  "name is required",
+		})
+	}
 }
 
 func checkDescription(desc string, issues *[]Issue) {
@@ -189,12 +209,18 @@ func checkMCP(name string, m oac.MCPSpec, issues *[]Issue) {
 
 func checkOrchestrator(orch *oac.OrchestratorSpec, issues *[]Issue) {
 	if orch == nil {
+		*issues = append(*issues, Issue{
+			Severity: SeverityError,
+			Field:    "orchestrator",
+			Message:  "orchestrator is required",
+		})
+
 		return
 	}
 
 	if orch.Env == "" {
 		*issues = append(*issues, Issue{
-			Severity: SeverityWarning,
+			Severity: SeverityError,
 			Field:    "orchestrator.env",
 			Message:  "env is not set",
 		})
@@ -202,7 +228,7 @@ func checkOrchestrator(orch *oac.OrchestratorSpec, issues *[]Issue) {
 
 	if orch.Bearer == nil && orch.MTLS == nil {
 		*issues = append(*issues, Issue{
-			Severity: SeverityWarning,
+			Severity: SeverityError,
 			Field:    "orchestrator",
 			Message:  "no auth method configured",
 		})

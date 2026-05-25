@@ -38,29 +38,6 @@ func ExampleParse_unknownVersion() {
 	// true
 }
 
-func ExampleManifest_Validate() {
-	labels := map[string]string{
-		"org.openagentcontainers.version":                       "v1alpha1",
-		"org.openagentcontainers.name":                          "my-agent",
-		"org.openagentcontainers.orchestrator.env":              "ORCHESTRATOR_URL",
-		"org.openagentcontainers.orchestrator.bearer.token.env": "ORCHESTRATOR_TOKEN",
-	}
-
-	m, err := oac.Parse(labels)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = m.Validate()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("valid")
-	// Output:
-	// valid
-}
-
 func ExampleV1Alpha1Spec() {
 	labels := map[string]string{
 		"org.openagentcontainers.version":                       "v1alpha1",

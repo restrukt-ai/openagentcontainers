@@ -13,18 +13,18 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/spf13/cobra"
 
+	"github.com/restrukt-ai/openagentcontainers/pkg/check"
 	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
-	"github.com/restrukt-ai/openagentcontainers/pkg/lint"
 	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
-// sentinel errors for fetchLabels and runLint.
+// sentinel errors for fetchLabels and runCheck.
 var (
 	errMutuallyExclusive = errors.New("--dockerfile and --image are mutually exclusive")
 	errUnknownInputMode  = errors.New("unknown input mode")
 )
 
-type lintFlags struct {
+type checkFlags struct {
 	outputJSON bool
 	insecure   bool
 	dockerfile bool
@@ -38,7 +38,7 @@ const (
 	modeImage
 )
 
-func detectInputMode(arg string, f lintFlags) inputMode {
+func detectInputMode(arg string, f checkFlags) inputMode {
 	if f.dockerfile {
 		return modeDockerfile
 	}
@@ -194,15 +194,15 @@ func parseLabelPairs(s string) map[string]string {
 	return result
 }
 
-func lintCmd() *cobra.Command {
-	var f lintFlags
+func checkCmd() *cobra.Command {
+	var f checkFlags
 
 	cmd := &cobra.Command{
-		Use:   "lint <dockerfile-or-image-ref>",
-		Short: "Lint OAC labels from a Dockerfile or image reference",
+		Use:   "check <dockerfile-or-image-ref>",
+		Short: "Check OAC labels from a Dockerfile or image reference",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLint(cmd, args, f)
+			return runCheck(cmd, args, f)
 		},
 	}
 
@@ -214,7 +214,7 @@ func lintCmd() *cobra.Command {
 	return cmd
 }
 
-func fetchLabels(args []string, f lintFlags) (map[string]string, error) {
+func fetchLabels(args []string, f checkFlags) (map[string]string, error) {
 	switch detectInputMode(args[0], f) {
 	case modeDockerfile:
 		return parseDockerfileLabels(args[0])
@@ -231,16 +231,16 @@ func fetchLabels(args []string, f lintFlags) (map[string]string, error) {
 	}
 }
 
-func encodeLintIssues(issues []lint.Issue) error {
+func encodeCheckIssues(issues []check.Issue) error {
 	out := issues
 	if out == nil {
-		out = make([]lint.Issue, 0)
+		out = make([]check.Issue, 0)
 	}
 
 	return json.NewEncoder(os.Stdout).Encode(out)
 }
 
-func runLint(_ *cobra.Command, args []string, f lintFlags) error {
+func runCheck(_ *cobra.Command, args []string, f checkFlags) error {
 	if f.dockerfile && f.image {
 		return errMutuallyExclusive
 	}
@@ -255,23 +255,23 @@ func runLint(_ *cobra.Command, args []string, f lintFlags) error {
 		return err
 	}
 
-	issues := lint.Lint(manifest)
+	issues := check.Check(manifest)
 
 	if f.outputJSON {
-		return encodeLintIssues(issues)
+		return encodeCheckIssues(issues)
 	}
 
 	if len(issues) == 0 {
 		return nil
 	}
 
-	err = writeLintTable(issues)
+	err = writeCheckTable(issues)
 	if err != nil {
 		return err
 	}
 
 	for _, iss := range issues {
-		if iss.Severity == lint.SeverityError {
+		if iss.Severity == check.SeverityError {
 			os.Exit(1) //nolint:revive
 		}
 	}
@@ -279,7 +279,7 @@ func runLint(_ *cobra.Command, args []string, f lintFlags) error {
 	return nil
 }
 
-func writeLintTable(issues []lint.Issue) error {
+func writeCheckTable(issues []check.Issue) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, tabwriterPadding, ' ', 0)
 	fmt.Fprintln(w, "SEVERITY\tFIELD\tMESSAGE")
 

@@ -8,37 +8,9 @@ import (
 	"strings"
 )
 
-// Sentinel errors returned by [Parse] and [Manifest.Validate].
-// Use [errors.Is] to test for specific conditions.
-var (
-	// ErrUnsupportedVersion is returned by [ParseSpecVersion] (and by [Parse]) when
-	// the version label is absent or not one of the known [SpecVersion] values.
-	ErrUnsupportedVersion = errors.New("unsupported spec version")
-
-	// ErrNoSpec is returned by Validate when neither V1Alpha1 nor V1Alpha2 is
-	// populated. This occurs when a Manifest is constructed manually without
-	// calling Parse.
-	ErrNoSpec = errors.New("no spec populated for version")
-
-	// ErrNameRequired is returned by Validate when the spec's Name field is empty.
-	ErrNameRequired = errors.New("name is required")
-
-	// ErrOrchestratorRequired is returned by Validate when no Orchestrator is set.
-	ErrOrchestratorRequired = errors.New("orchestrator is required")
-
-	// ErrOrchestratorEnvRequired is returned by Validate when Orchestrator.Env is empty.
-	ErrOrchestratorEnvRequired = errors.New("orchestrator.env is required")
-
-	// ErrOrchestratorAuthRequired is returned by Validate when the orchestrator
-	// declares neither Bearer nor MTLS authentication.
-	ErrOrchestratorAuthRequired = errors.New("orchestrator must declare at least one auth method")
-
-	// ErrSessionIsolation is returned by Validate (v1alpha2 only) when
-	// Session.Isolation is true and one or more workspaces are declared.
-	// These are mutually exclusive: isolation provisions ephemeral volumes per
-	// session, making persistent workspace mounts undefined behaviour.
-	ErrSessionIsolation = errors.New("session.isolation cannot be combined with workspaces")
-)
+// ErrUnsupportedVersion is returned by [ParseSpecVersion] (and by [Parse]) when
+// the version label is absent or not one of the known [SpecVersion] values.
+var ErrUnsupportedVersion = errors.New("unsupported spec version")
 
 // ParseSpecVersion parses s as a known OAC spec version.
 // Returns [ErrUnsupportedVersion] when s is absent or unrecognised.

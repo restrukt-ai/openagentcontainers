@@ -1,20 +1,17 @@
-// Package oac provides parsing and validation for Open Agent Container (OAC) manifests.
+// Package oac provides parsing for Open Agent Container (OAC) manifests.
 //
 // OAC encodes agent metadata as OCI image labels under the org.openagentcontainers.*
 // namespace. [Parse] strips the prefix, converts dotted label suffixes into a JSON object
 // tree, and decodes the result into a versioned [Manifest]. After a successful parse,
 // exactly one of [Manifest.V1Alpha1] or [Manifest.V1Alpha2] is non-nil, selected by the
-// version label. Call [Manifest.Validate] to check that required fields are populated.
+// version label.
 //
 //	m, err := oac.Parse(labels)
 //	if err != nil { ... }
-//	if err := m.Validate(); err != nil { ... }
 //
-// Use the discovery package to obtain label maps from OCI registries, and the lint
-// package for advisory checks beyond what [Manifest.Validate] enforces.
+// Use the discovery package to obtain label maps from OCI registries, and the check
+// package for all validation and advisory checks.
 package oac
-
-import "fmt"
 
 // Label key constants for OAC-conformant images.
 const (
@@ -76,110 +73,37 @@ func (m *Manifest) Description() string {
 	}
 }
 
-// specValidator is implemented by each versioned spec.
-type specValidator interface {
-	validate() error
-	orchestrator() *OrchestratorSpec
-}
-
-func (s *V1Alpha1Spec) orchestrator() *OrchestratorSpec { return s.Orchestrator }
-func (s *V1Alpha2Spec) orchestrator() *OrchestratorSpec { return s.Orchestrator }
-
-// validateSpec validates a versioned spec and its orchestrator.
-func validateSpec(s specValidator) error {
-	err := s.validate()
-	if err != nil {
-		return err
-	}
-
-	o := s.orchestrator()
-	if o == nil {
-		return ErrOrchestratorRequired
-	}
-
-	return validateOrchestrator(o)
-}
-
-// Validate checks that m contains a populated, correctly configured spec.
-// Possible errors: [ErrNoSpec], [ErrNameRequired], [ErrOrchestratorRequired],
-// [ErrOrchestratorEnvRequired], [ErrOrchestratorAuthRequired], and (v1alpha2 only)
-// [ErrSessionIsolation]. Use [errors.Is] to test for specific conditions.
-func (m *Manifest) Validate() error {
-	switch {
-	case m.V1Alpha1 != nil:
-		return validateSpec(m.V1Alpha1)
-	case m.V1Alpha2 != nil:
-		return validateSpec(m.V1Alpha2)
-	default:
-		return fmt.Errorf("%w %q", ErrNoSpec, m.SpecVersion)
-	}
-}
-
-func validateOrchestrator(o *OrchestratorSpec) error {
-	if o.Env == "" {
-		return ErrOrchestratorEnvRequired
-	}
-
-	if o.Bearer == nil && o.MTLS == nil {
-		return ErrOrchestratorAuthRequired
-	}
-
-	return nil
-}
-
 // V1Alpha1Spec is the spec for OAC images declaring [VersionV1Alpha1].
-// Name and Orchestrator are required (enforced by Validate). All other fields are optional.
+// All fields are optional at the parse level; use the lint package to check required fields.
 // Description is populated from [LabelDescription], which is an unofficial extension not defined
 // by the OAC specification.
 type V1Alpha1Spec struct {
-	Name        string                   `json:"name"`
-	Description string                   `json:"description,omitempty"`
-	Inference   *InferenceSpec           `json:"inference,omitempty"`
-	MCP         map[string]MCPSpec       `json:"mcp,omitempty"`
-	Workspace   map[string]WorkspaceSpec `json:"workspace,omitempty"`
-	// Orchestrator is required; [Validate] returns [ErrOrchestratorRequired] when nil.
-	Orchestrator *OrchestratorSpec    `json:"orchestrator,omitempty"`
-	Events       map[string]EventSpec `json:"events,omitempty"`
-}
-
-func (s *V1Alpha1Spec) validate() error {
-	if s.Name == "" {
-		return ErrNameRequired
-	}
-
-	return nil
+	Name         string                   `json:"name"`
+	Description  string                   `json:"description,omitempty"`
+	Inference    *InferenceSpec           `json:"inference,omitempty"`
+	MCP          map[string]MCPSpec       `json:"mcp,omitempty"`
+	Workspace    map[string]WorkspaceSpec `json:"workspace,omitempty"`
+	Orchestrator *OrchestratorSpec        `json:"orchestrator,omitempty"`
+	Events       map[string]EventSpec     `json:"events,omitempty"`
 }
 
 // V1Alpha2Spec is the spec for OAC images declaring [VersionV1Alpha2].
 // It extends V1Alpha1Spec with session isolation support.
-// When Session.Isolation is true, the Workspace map must be empty; combining them causes
-// Validate to return ErrSessionIsolation.
+// When Session.Isolation is true, the Workspace map must be empty;
+// use the lint package to detect this combination.
 type V1Alpha2Spec struct {
 	V1Alpha1Spec
 
 	// Session configures per-session isolation. When Session.Isolation is true,
-	// Workspace must be empty; see [ErrSessionIsolation].
+	// Workspace must be empty; [check.Check] reports a SeverityError when combined.
 	Session SessionSpec `json:"session"`
-}
-
-func (s *V1Alpha2Spec) validate() error {
-	err := s.V1Alpha1Spec.validate()
-	if err != nil {
-		return err
-	}
-
-	if s.Session.Isolation && len(s.Workspace) > 0 {
-		return ErrSessionIsolation
-	}
-
-	return nil
 }
 
 // SessionSpec describes per-session runtime isolation settings.
 type SessionSpec struct {
 	// Isolation, when true, requests that the orchestrator provision a fresh ephemeral
 	// workspace per session rather than sharing volumes across sessions.
-	// Incompatible with declared workspaces; see ErrSessionIsolation.
+	// Incompatible with declared workspaces; [check.Check] reports a SeverityError when combined.
 	Isolation bool `json:"isolation,omitempty"`
 }
 

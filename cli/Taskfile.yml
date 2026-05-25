@@ -44,12 +44,12 @@ tasks:
   tidy:
     desc: Tidy go.mod and go.sum
     cmds:
-      - go mod tidy
+      - go mod tidy -e
 
   tidy:check:
     desc: Verify go.mod and go.sum are tidy (no modifications)
     cmds:
-      - go mod tidy
+      - go mod tidy -e
       - git diff --exit-code -- go.mod go.sum
 
   run:
