@@ -2,16 +2,17 @@
 
 ## Prerequisites
 
-| Tool                                                                | Purpose                                                  |
-| ------------------------------------------------------------------- | -------------------------------------------------------- |
-| Go 1.26+                                                            | Build and test the library and CLI                       |
-| [Task](https://taskfile.dev)                                        | Run dev commands (`task`)                                |
-| [lefthook](https://github.com/evilmartians/lefthook)                | Git hooks                                                |
-| [commitlint](https://commitlint.js.org)                             | Commit message validation — install globally (see Setup) |
-| [uv](https://docs.astral.sh/uv/)                                    | Spec site (MkDocs) — only needed if editing the site     |
-| [golangci-lint](https://golangci-lint.run)                          | Go linting                                               |
-| [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | Dependency vulnerability scanning                        |
-| [nilaway](https://github.com/uber-go/nilaway)                       | Nil safety analysis                                      |
+| Tool                                                                | Purpose                                                                                 |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Go 1.26+                                                            | Build and test the library and CLI                                                      |
+| [Task](https://taskfile.dev)                                        | Run dev commands (`task`)                                                               |
+| [lefthook](https://github.com/evilmartians/lefthook)                | Git hooks                                                                               |
+| [commitlint](https://commitlint.js.org)                             | Commit message validation — install globally (see Setup)                                |
+| [uv](https://docs.astral.sh/uv/)                                    | Spec site (MkDocs) — only needed if editing the site                                    |
+| [golangci-lint](https://golangci-lint.run)                          | Go linting                                                                              |
+| [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck) | Dependency vulnerability scanning                                                       |
+| [nilaway](https://github.com/uber-go/nilaway)                       | Nil safety analysis                                                                     |
+| [pkgsite](https://pkg.go.dev/golang.org/x/pkgsite/cmd/pkgsite)      | Serve Go package docs locally (`task docs`) — only needed if working on the library API |
 
 ## Setup
 
