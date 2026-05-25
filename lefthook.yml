@@ -1,13 +1,11 @@
 pre-commit:
   commands:
-    pkg-lint:
-      run: task pkg:lint
-    pkg-tidy-check:
-      run: task pkg:tidy:check
-    cli-lint:
-      run: task cli:lint
-    cli-tidy-check:
-      run: task cli:tidy:check
+    tidy:
+      run: task tidy
+    lint:
+      run: task lint
+    test:
+      run: task test
 
 commit-msg:
   commands:
