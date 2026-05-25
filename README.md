@@ -114,3 +114,8 @@ The scan cache lives at `~/.cache/oac/registry.json`. Entries are keyed by OCI d
 The full label reference, conformance requirements, and spec rationale are in
 [`SPEC.md`](./SPEC.md) and at the [spec website](https://openagentcontainers.dev). The spec
 site source is in [`spec-site/`](./spec-site).
+
+## Contributing
+
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup instructions, commit conventions, and
+guidance on spec vs. code vs. doc changes.
