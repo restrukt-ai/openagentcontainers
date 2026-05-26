@@ -51,10 +51,17 @@ is required.
 github.com/restrukt-ai/openagentcontainers/pkg
 ```
 
-Three packages:
+Five packages:
 
-**`oac`** — types, parsing, and validation. `Parse(labels)` converts a flat label map into a
-typed, versioned `Manifest`. `Manifest.Validate()` enforces required fields.
+**`oac`** — types and parsing. `Parse(labels)` converts a flat label map into a typed, versioned
+`Manifest`.
+
+**`check`** — semantic validation. `Check(manifest)` returns a slice of severity-tagged `Issue`
+values covering required fields, auth configuration consistency, and best-practice warnings.
+
+**`dockerfile`** — Dockerfile parsing. `ParseLabels(r)` extracts raw OAC label key-value pairs
+from any `io.Reader`. `Parse(path)` opens a file by path and returns a fully-decoded
+`*oac.Dockerfile`.
 
 **`discovery`** — concurrent OCI registry scanner. `Discover(ctx, registry, opts)` catalogs a
 registry and returns all OAC-conformant images. Supports configurable concurrency, rate limiting,
@@ -66,7 +73,7 @@ images whose name, version, description, or any label value contains the query s
 
 ## CLI
 
-The `oac` CLI provides discovery and search over OCI registries.
+The `oac` CLI provides discovery, search, and label validation for OAC-conformant images.
 
 **Install with Go:**
 
@@ -89,11 +96,25 @@ oac discover registry.example.com
 # search by name, description, or any label value
 oac search registry.example.com "weather"
 
+# check OAC labels in a Dockerfile or image reference
+oac check ./Dockerfile
+oac check registry.example.com/my-agent:latest
+
 # output as JSON
 oac discover registry.example.com --json
+oac check ./Dockerfile --json
 ```
 
-Key flags (shared by both commands):
+`check` exits with code 1 if any issue has severity `error`. Flags:
+
+| Flag            | Description                              |
+| --------------- | ---------------------------------------- |
+| `--json`        | Output issues as JSON instead of a table |
+| `--insecure`    | Use HTTP instead of HTTPS                |
+| `-f, --dockerfile` | Force Dockerfile input mode           |
+| `--image`       | Force image reference input mode         |
+
+Key flags (shared by `discover` and `search`):
 
 | Flag              | Default | Description                                      |
 | ----------------- | ------- | ------------------------------------------------ |
