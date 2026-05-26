@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -21,6 +22,9 @@ import (
 var (
 	errMutuallyExclusive = errors.New("--dockerfile and --image are mutually exclusive")
 	errUnknownInputMode  = errors.New("unknown input mode")
+	// errCheckFailed signals exit code 1 without an additional error message;
+	// it is checked by main() to suppress cobra's "Error: ..." output.
+	errCheckFailed = errors.New("check: one or more errors found")
 )
 
 type checkFlags struct {
@@ -78,10 +82,10 @@ func checkCmd() *cobra.Command {
 	return cmd
 }
 
-func fetchLabels(args []string, f checkFlags) (map[string]string, error) {
-	switch detectInputMode(args[0], f) {
+func fetchLabels(arg string, f checkFlags) (map[string]string, error) {
+	switch detectInputMode(arg, f) {
 	case modeDockerfile:
-		file, err := os.Open(args[0])
+		file, err := os.Open(arg)
 		if err != nil {
 			return nil, err
 		}
@@ -95,27 +99,27 @@ func fetchLabels(args []string, f checkFlags) (map[string]string, error) {
 			craneOpts = append(craneOpts, crane.Insecure)
 		}
 
-		return discovery.FetchLabels(args[0], craneOpts...)
+		return discovery.FetchLabels(arg, craneOpts...)
 	default:
 		return nil, errUnknownInputMode
 	}
 }
 
-func encodeCheckIssues(issues []check.Issue) error {
+func encodeIssuesJSON(w io.Writer, issues []check.Issue) error {
 	out := issues
 	if out == nil {
 		out = make([]check.Issue, 0)
 	}
 
-	return json.NewEncoder(os.Stdout).Encode(out)
+	return json.NewEncoder(w).Encode(out)
 }
 
-func runCheck(_ *cobra.Command, args []string, f checkFlags) error {
+func runCheck(cmd *cobra.Command, args []string, f checkFlags) error {
 	if f.dockerfile && f.image {
 		return errMutuallyExclusive
 	}
 
-	labels, err := fetchLabels(args, f)
+	labels, err := fetchLabels(args[0], f)
 	if err != nil {
 		return err
 	}
@@ -128,34 +132,34 @@ func runCheck(_ *cobra.Command, args []string, f checkFlags) error {
 	issues := check.Check(manifest)
 
 	if f.outputJSON {
-		return encodeCheckIssues(issues)
+		return encodeIssuesJSON(cmd.OutOrStdout(), issues)
 	}
 
 	if len(issues) == 0 {
 		return nil
 	}
 
-	err = writeCheckTable(issues)
+	err = writeCheckTable(cmd.OutOrStdout(), issues)
 	if err != nil {
 		return err
 	}
 
 	for _, iss := range issues {
 		if iss.Severity == check.SeverityError {
-			os.Exit(1) //nolint:revive
+			return errCheckFailed
 		}
 	}
 
 	return nil
 }
 
-func writeCheckTable(issues []check.Issue) error {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, tabwriterPadding, ' ', 0)
-	fmt.Fprintln(w, "SEVERITY\tFIELD\tMESSAGE")
+func writeCheckTable(w io.Writer, issues []check.Issue) error {
+	tw := tabwriter.NewWriter(w, 0, 0, tabwriterPadding, ' ', 0)
+	fmt.Fprintln(tw, "SEVERITY\tFIELD\tMESSAGE")
 
 	for _, iss := range issues {
-		fmt.Fprintf(w, "%s\t%s\t%s\n", iss.Severity, iss.Field, iss.Message)
+		fmt.Fprintf(tw, "%s\t%s\t%s\n", iss.Severity, iss.Field, iss.Message)
 	}
 
-	return w.Flush()
+	return tw.Flush()
 }

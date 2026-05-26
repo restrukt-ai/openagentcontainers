@@ -3,7 +3,9 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"text/tabwriter"
 
@@ -27,8 +29,10 @@ const (
 
 func main() {
 	root := &cobra.Command{
-		Use:   "oac",
-		Short: "Open Agent Containers CLI",
+		Use:           "oac",
+		Short:         "Open Agent Containers CLI",
+		SilenceErrors: true,
+		SilenceUsage:  true,
 	}
 
 	root.AddCommand(discoverCmd())
@@ -37,6 +41,10 @@ func main() {
 
 	err := root.Execute()
 	if err != nil {
+		if !errors.Is(err, errCheckFailed) {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		}
+
 		os.Exit(1)
 	}
 }
@@ -115,28 +123,28 @@ func (f *commonFlags) buildOpts() (discovery.Options, error) {
 	return discovery.NewOptions(optFns...), nil
 }
 
-// saveCache flushes the cache if non-nil; logs to stderr on failure.
-func saveCache(c discovery.Cache) {
+// saveCache flushes the cache if non-nil; logs to w on failure.
+func saveCache(w io.Writer, c discovery.Cache) {
 	if c == nil {
 		return
 	}
 
 	err := c.Save()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "warning: save cache: %v\n", err)
+		fmt.Fprintf(w, "warning: save cache: %v\n", err)
 	}
 }
 
-// writeAgentsTable writes agents as a tabwriter table.
-func writeAgentsTable(agents []oac.Image) error {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, tabwriterPadding, ' ', 0)
-	fmt.Fprintln(w, "REFERENCE\tNAME\tVERSION\tDESCRIPTION")
+// writeAgentsTable writes agents as a tabwriter table to w.
+func writeAgentsTable(w io.Writer, agents []oac.Image) error {
+	tw := tabwriter.NewWriter(w, 0, 0, tabwriterPadding, ' ', 0)
+	fmt.Fprintln(tw, "REFERENCE\tNAME\tVERSION\tDESCRIPTION")
 
 	for _, a := range agents {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", a.Reference, a.Name(), a.SpecVersion, a.Description())
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", a.Reference, a.Name(), a.SpecVersion, a.Description())
 	}
 
-	return w.Flush()
+	return tw.Flush()
 }
 
 func discoverCmd() *cobra.Command {
@@ -162,7 +170,7 @@ func runDiscover(cmd *cobra.Command, args []string, f commonFlags) error {
 		return err
 	}
 
-	defer saveCache(opts.Cache())
+	defer saveCache(cmd.ErrOrStderr(), opts.Cache())
 
 	agents, err := discovery.Discover(cmd.Context(), args[0], opts)
 	if err != nil {
@@ -170,10 +178,10 @@ func runDiscover(cmd *cobra.Command, args []string, f commonFlags) error {
 	}
 
 	if f.outputJSON {
-		return json.NewEncoder(os.Stdout).Encode(agents)
+		return json.NewEncoder(cmd.OutOrStdout()).Encode(agents)
 	}
 
-	return writeAgentsTable(agents)
+	return writeAgentsTable(cmd.OutOrStdout(), agents)
 }
 
 func searchCmd() *cobra.Command {
@@ -199,7 +207,7 @@ func runSearch(cmd *cobra.Command, args []string, f commonFlags) error {
 		return err
 	}
 
-	defer saveCache(opts.Cache())
+	defer saveCache(cmd.ErrOrStderr(), opts.Cache())
 
 	agents, err := search.Search(cmd.Context(), args[0], args[1], opts)
 	if err != nil {
@@ -207,14 +215,14 @@ func runSearch(cmd *cobra.Command, args []string, f commonFlags) error {
 	}
 
 	if len(agents) == 0 {
-		fmt.Fprintf(os.Stderr, "No agents found matching %q\n", args[1])
+		fmt.Fprintf(cmd.ErrOrStderr(), "No agents found matching %q\n", args[1])
 
 		return nil
 	}
 
 	if f.outputJSON {
-		return json.NewEncoder(os.Stdout).Encode(agents)
+		return json.NewEncoder(cmd.OutOrStdout()).Encode(agents)
 	}
 
-	return writeAgentsTable(agents)
+	return writeAgentsTable(cmd.OutOrStdout(), agents)
 }

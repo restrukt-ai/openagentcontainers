@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"os"
 	"testing"
 
@@ -76,28 +75,18 @@ func TestDetectInputMode_ImageRef(t *testing.T) {
 
 // --- writeCheckTable ---
 
-func TestWriteCheckTable(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stdout
-	os.Stdout = w
+func TestWriteCheckTable(t *testing.T) {
+	t.Parallel()
 
 	issues := []check.Issue{{
 		Severity: check.SeverityWarning,
 		Field:    "description",
 		Message:  "description is not set",
 	}}
-	err := writeCheckTable(issues)
-
-	w.Close()
-
-	os.Stdout = old
 
 	var buf bytes.Buffer
 
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	err := writeCheckTable(&buf, issues)
 
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "SEVERITY")
@@ -110,7 +99,7 @@ func TestRunCheck_MutuallyExclusive(t *testing.T) {
 	t.Parallel()
 
 	f := checkFlags{dockerfile: true, image: true}
-	err := runCheck(nil, []string{"anything"}, f)
+	err := runCheck(makeCmd(), []string{"anything"}, f)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "mutually exclusive")
 }
@@ -119,7 +108,7 @@ func TestRunCheck_DockerfileReadError(t *testing.T) {
 	t.Parallel()
 
 	f := checkFlags{dockerfile: true}
-	err := runCheck(nil, []string{"nonexistent-path"}, f)
+	err := runCheck(makeCmd(), []string{"nonexistent-path"}, f)
 	require.Error(t, err)
 }
 
@@ -132,7 +121,7 @@ LABEL org.openagentcontainers.name="agent"
 `)
 
 	f := checkFlags{dockerfile: true}
-	err := runCheck(nil, []string{path}, f)
+	err := runCheck(makeCmd(), []string{path}, f)
 	require.Error(t, err)
 }
 
@@ -148,11 +137,13 @@ LABEL org.openagentcontainers.orchestrator.bearer.token.env="ORCHESTRATOR_TOKEN"
 `)
 
 	f := checkFlags{dockerfile: true}
-	err := runCheck(nil, []string{path}, f)
+	err := runCheck(makeCmd(), []string{path}, f)
 	require.NoError(t, err)
 }
 
-func TestRunCheck_TableOutput(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
+func TestRunCheck_TableOutput(t *testing.T) {
+	t.Parallel()
+
 	path := writeDockerfile(t, `FROM alpine
 LABEL org.openagentcontainers.version="v1alpha2"
 LABEL org.openagentcontainers.name="agent"
@@ -160,52 +151,34 @@ LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_URL"
 LABEL org.openagentcontainers.orchestrator.bearer.token.env="ORCHESTRATOR_TOKEN"
 `)
 
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stdout
-	os.Stdout = w
-
-	f := checkFlags{dockerfile: true, outputJSON: false}
-	err := runCheck(nil, []string{path}, f)
-
-	w.Close()
-
-	os.Stdout = old
+	cmd := makeCmd()
 
 	var buf bytes.Buffer
+	cmd.SetOut(&buf)
 
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	f := checkFlags{dockerfile: true, outputJSON: false}
+	err := runCheck(cmd, []string{path}, f)
 
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "SEVERITY")
 	assert.Contains(t, buf.String(), "description")
 }
 
-func TestRunCheck_JSONOutput(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
+func TestRunCheck_JSONOutput(t *testing.T) {
+	t.Parallel()
+
 	path := writeDockerfile(t, `FROM alpine
 LABEL org.openagentcontainers.version="v1alpha2"
 LABEL org.openagentcontainers.name="agent"
 `)
 
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stdout
-	os.Stdout = w
-
-	f := checkFlags{dockerfile: true, outputJSON: true}
-	err := runCheck(nil, []string{path}, f)
-
-	w.Close()
-
-	os.Stdout = old
+	cmd := makeCmd()
 
 	var buf bytes.Buffer
+	cmd.SetOut(&buf)
 
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	f := checkFlags{dockerfile: true, outputJSON: true}
+	err := runCheck(cmd, []string{path}, f)
 
 	require.NoError(t, err)
 
@@ -219,6 +192,6 @@ func TestRunCheck_ImageModeError(t *testing.T) {
 	t.Parallel()
 
 	f := checkFlags{image: true}
-	err := runCheck(nil, []string{"localhost:1/repo:latest"}, f)
+	err := runCheck(makeCmd(), []string{"localhost:1/repo:latest"}, f)
 	require.Error(t, err)
 }

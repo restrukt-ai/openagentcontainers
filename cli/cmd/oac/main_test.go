@@ -5,10 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -82,32 +79,20 @@ func push(t *testing.T, img v1.Image, ref string, opts []crane.Option) {
 func TestSaveCache_Nil(t *testing.T) {
 	t.Parallel()
 
-	saveCache(nil) // must not panic
+	saveCache(bytes.NewBuffer(nil), nil) // must not panic
 }
 
 func TestSaveCache_Success(t *testing.T) {
 	t.Parallel()
 
-	saveCache(&mockCache{saveErr: nil}) // must not panic
+	saveCache(bytes.NewBuffer(nil), &mockCache{saveErr: nil}) // must not panic
 }
 
-func TestSaveCache_Error(t *testing.T) { //nolint:paralleltest // redirects os.Stderr
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stderr
-	os.Stderr = w
-
-	saveCache(&mockCache{saveErr: errSaveCacheDiskFull})
-
-	w.Close()
-
-	os.Stderr = old
+func TestSaveCache_Error(t *testing.T) {
+	t.Parallel()
 
 	var buf bytes.Buffer
-
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	saveCache(&buf, &mockCache{saveErr: errSaveCacheDiskFull})
 
 	assert.Contains(t, buf.String(), "warning: save cache")
 	assert.Contains(t, buf.String(), "disk full")
@@ -129,7 +114,7 @@ func TestBuildOpts_ExplicitCachePath(t *testing.T) {
 
 	f := commonFlags{
 		noCache:     false,
-		cachePath:   filepath.Join(t.TempDir(), "c.json"),
+		cachePath:   t.TempDir() + "/c.json",
 		rateLimit:   10,
 		concurrency: 1,
 	}
@@ -173,34 +158,19 @@ func TestBuildOpts_Force(t *testing.T) {
 
 // --- writeAgentsTable ---
 
-func TestWriteAgentsTable_Empty(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stdout
-	os.Stdout = w
-
-	err := writeAgentsTable(nil)
-
-	w.Close()
-
-	os.Stdout = old
+func TestWriteAgentsTable_Empty(t *testing.T) {
+	t.Parallel()
 
 	var buf bytes.Buffer
 
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	err := writeAgentsTable(&buf, nil)
 
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "REFERENCE")
 }
 
-func TestWriteAgentsTable_WithData(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stdout
-	os.Stdout = w
+func TestWriteAgentsTable_WithData(t *testing.T) {
+	t.Parallel()
 
 	agents := []oac.Image{
 		{
@@ -211,16 +181,10 @@ func TestWriteAgentsTable_WithData(t *testing.T) { //nolint:paralleltest // redi
 			Reference: "reg/my-agent:latest",
 		},
 	}
-	err := writeAgentsTable(agents)
-
-	w.Close()
-
-	os.Stdout = old
 
 	var buf bytes.Buffer
 
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	err := writeAgentsTable(&buf, agents)
 
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "my-agent")
@@ -229,7 +193,9 @@ func TestWriteAgentsTable_WithData(t *testing.T) { //nolint:paralleltest // redi
 
 // --- runDiscover ---
 
-func TestRunDiscover_JSONOutput(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
+func TestRunDiscover_JSONOutput(t *testing.T) {
+	t.Parallel()
+
 	host, craneOpts := testRegistry(t)
 
 	img := makeImage(t, map[string]string{
@@ -238,23 +204,13 @@ func TestRunDiscover_JSONOutput(t *testing.T) { //nolint:paralleltest // redirec
 	})
 	push(t, img, host+"/test-agent:latest", craneOpts)
 
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stdout
-	os.Stdout = w
-
-	f := commonFlags{outputJSON: true, noCache: true, rateLimit: 10, concurrency: 2}
-	err := runDiscover(makeCmd(), []string{host}, f)
-
-	w.Close()
-
-	os.Stdout = old
+	cmd := makeCmd()
 
 	var buf bytes.Buffer
+	cmd.SetOut(&buf)
 
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	f := commonFlags{outputJSON: true, noCache: true, rateLimit: 10, concurrency: 2}
+	err := runDiscover(cmd, []string{host}, f)
 
 	require.NoError(t, err)
 
@@ -263,7 +219,9 @@ func TestRunDiscover_JSONOutput(t *testing.T) { //nolint:paralleltest // redirec
 	assert.GreaterOrEqual(t, len(agents), 1)
 }
 
-func TestRunDiscover_TableOutput(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
+func TestRunDiscover_TableOutput(t *testing.T) {
+	t.Parallel()
+
 	host, craneOpts := testRegistry(t)
 
 	img := makeImage(t, map[string]string{
@@ -272,23 +230,13 @@ func TestRunDiscover_TableOutput(t *testing.T) { //nolint:paralleltest // redire
 	})
 	push(t, img, host+"/test-agent:latest", craneOpts)
 
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stdout
-	os.Stdout = w
-
-	f := commonFlags{outputJSON: false, noCache: true, rateLimit: 10, concurrency: 2}
-	err := runDiscover(makeCmd(), []string{host}, f)
-
-	w.Close()
-
-	os.Stdout = old
+	cmd := makeCmd()
 
 	var buf bytes.Buffer
+	cmd.SetOut(&buf)
 
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	f := commonFlags{outputJSON: false, noCache: true, rateLimit: 10, concurrency: 2}
+	err := runDiscover(cmd, []string{host}, f)
 
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "REFERENCE")
@@ -305,7 +253,9 @@ func TestRunDiscover_Error(t *testing.T) {
 
 // --- runSearch ---
 
-func TestRunSearch_NoResults(t *testing.T) { //nolint:paralleltest // redirects os.Stderr
+func TestRunSearch_NoResults(t *testing.T) {
+	t.Parallel()
+
 	host, craneOpts := testRegistry(t)
 
 	img := makeImage(t, map[string]string{
@@ -314,29 +264,21 @@ func TestRunSearch_NoResults(t *testing.T) { //nolint:paralleltest // redirects 
 	})
 	push(t, img, host+"/code-agent:latest", craneOpts)
 
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stderr
-	os.Stderr = w
-
-	f := commonFlags{noCache: true, rateLimit: 10, concurrency: 2}
-	err := runSearch(makeCmd(), []string{host, "zzz"}, f)
-
-	w.Close()
-
-	os.Stderr = old
+	cmd := makeCmd()
 
 	var buf bytes.Buffer
+	cmd.SetErr(&buf)
 
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	f := commonFlags{noCache: true, rateLimit: 10, concurrency: 2}
+	err := runSearch(cmd, []string{host, "zzz"}, f)
 
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "No agents found")
 }
 
-func TestRunSearch_JSONOutput(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
+func TestRunSearch_JSONOutput(t *testing.T) {
+	t.Parallel()
+
 	host, craneOpts := testRegistry(t)
 
 	img := makeImage(t, map[string]string{
@@ -345,23 +287,13 @@ func TestRunSearch_JSONOutput(t *testing.T) { //nolint:paralleltest // redirects
 	})
 	push(t, img, host+"/code-agent:latest", craneOpts)
 
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stdout
-	os.Stdout = w
-
-	f := commonFlags{outputJSON: true, noCache: true, rateLimit: 10, concurrency: 2}
-	err := runSearch(makeCmd(), []string{host, "code"}, f)
-
-	w.Close()
-
-	os.Stdout = old
+	cmd := makeCmd()
 
 	var buf bytes.Buffer
+	cmd.SetOut(&buf)
 
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	f := commonFlags{outputJSON: true, noCache: true, rateLimit: 10, concurrency: 2}
+	err := runSearch(cmd, []string{host, "code"}, f)
 
 	require.NoError(t, err)
 
@@ -370,7 +302,9 @@ func TestRunSearch_JSONOutput(t *testing.T) { //nolint:paralleltest // redirects
 	assert.Len(t, agents, 1)
 }
 
-func TestRunSearch_TableOutput(t *testing.T) { //nolint:paralleltest // redirects os.Stdout
+func TestRunSearch_TableOutput(t *testing.T) {
+	t.Parallel()
+
 	host, craneOpts := testRegistry(t)
 
 	img := makeImage(t, map[string]string{
@@ -379,23 +313,13 @@ func TestRunSearch_TableOutput(t *testing.T) { //nolint:paralleltest // redirect
 	})
 	push(t, img, host+"/code-agent:latest", craneOpts)
 
-	r, w, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-
-	old := os.Stdout
-	os.Stdout = w
-
-	f := commonFlags{outputJSON: false, noCache: true, rateLimit: 10, concurrency: 2}
-	err := runSearch(makeCmd(), []string{host, "code"}, f)
-
-	w.Close()
-
-	os.Stdout = old
+	cmd := makeCmd()
 
 	var buf bytes.Buffer
+	cmd.SetOut(&buf)
 
-	_, copyErr := io.Copy(&buf, r)
-	require.NoError(t, copyErr)
+	f := commonFlags{outputJSON: false, noCache: true, rateLimit: 10, concurrency: 2}
+	err := runSearch(cmd, []string{host, "code"}, f)
 
 	require.NoError(t, err)
 	assert.Contains(t, buf.String(), "REFERENCE")
