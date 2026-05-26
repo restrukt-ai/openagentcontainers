@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,7 +15,6 @@ import (
 	"github.com/restrukt-ai/openagentcontainers/cli/cmd/internal/scancache"
 	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
 	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
-	"github.com/restrukt-ai/openagentcontainers/pkg/search"
 )
 
 const (
@@ -145,84 +143,4 @@ func writeAgentsTable(w io.Writer, agents []oac.Image) error {
 	}
 
 	return tw.Flush()
-}
-
-func discoverCmd() *cobra.Command {
-	var f commonFlags
-
-	cmd := &cobra.Command{
-		Use:   "discover <registry>",
-		Short: "Discover OAC-conformant images in a registry",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDiscover(cmd, args, f)
-		},
-	}
-
-	f.register(cmd)
-
-	return cmd
-}
-
-func runDiscover(cmd *cobra.Command, args []string, f commonFlags) error {
-	opts, err := f.buildOpts()
-	if err != nil {
-		return err
-	}
-
-	defer saveCache(cmd.ErrOrStderr(), opts.Cache())
-
-	agents, err := discovery.Discover(cmd.Context(), args[0], opts)
-	if err != nil {
-		return err
-	}
-
-	if f.outputJSON {
-		return json.NewEncoder(cmd.OutOrStdout()).Encode(agents)
-	}
-
-	return writeAgentsTable(cmd.OutOrStdout(), agents)
-}
-
-func searchCmd() *cobra.Command {
-	var f commonFlags
-
-	cmd := &cobra.Command{
-		Use:   "search <registry> <query>",
-		Short: "Search for OAC agents matching a query across name, version, description, and labels",
-		Args:  cobra.ExactArgs(searchArgCount),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runSearch(cmd, args, f)
-		},
-	}
-
-	f.register(cmd)
-
-	return cmd
-}
-
-func runSearch(cmd *cobra.Command, args []string, f commonFlags) error {
-	opts, err := f.buildOpts()
-	if err != nil {
-		return err
-	}
-
-	defer saveCache(cmd.ErrOrStderr(), opts.Cache())
-
-	agents, err := search.Search(cmd.Context(), args[0], args[1], opts)
-	if err != nil {
-		return err
-	}
-
-	if len(agents) == 0 {
-		fmt.Fprintf(cmd.ErrOrStderr(), "No agents found matching %q\n", args[1])
-
-		return nil
-	}
-
-	if f.outputJSON {
-		return json.NewEncoder(cmd.OutOrStdout()).Encode(agents)
-	}
-
-	return writeAgentsTable(cmd.OutOrStdout(), agents)
 }
