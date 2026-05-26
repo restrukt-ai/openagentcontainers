@@ -74,7 +74,7 @@ func (m *Manifest) Description() string {
 }
 
 // V1Alpha1Spec is the spec for OAC images declaring [VersionV1Alpha1].
-// All fields are optional at the parse level; use the lint package to check required fields.
+// All fields are optional at the parse level; use [check.Check] to validate required fields.
 // Description is populated from [LabelDescription], which is an unofficial extension not defined
 // by the OAC specification.
 type V1Alpha1Spec struct {
@@ -90,7 +90,7 @@ type V1Alpha1Spec struct {
 // V1Alpha2Spec is the spec for OAC images declaring [VersionV1Alpha2].
 // It extends V1Alpha1Spec with session isolation support.
 // When Session.Isolation is true, the Workspace map must be empty;
-// use the lint package to detect this combination.
+// [check.Check] reports a SeverityError when both are set.
 type V1Alpha2Spec struct {
 	V1Alpha1Spec
 
@@ -111,7 +111,7 @@ type SessionSpec struct {
 // Env is the name of an environment variable; File is an absolute filesystem path.
 // The orchestrator injects the credential value into whichever source(s) are declared.
 // Setting both allows fallback: the runtime checks Env first, then File.
-// At least one field must be set.
+// At least one of Env or File must be non-empty; this is enforced by [check.Check], not [Parse].
 type EnvFile struct {
 	Env  string `json:"env,omitempty"`
 	File string `json:"file,omitempty"`
@@ -184,7 +184,7 @@ type OrchestratorBearerAuth struct {
 
 // OrchestratorMTLSAuth carries mTLS credentials for orchestrator authentication.
 // Cert and Key are required credential sources. CA is optional — the orchestrator provisions
-// the CA certificate; Lint does not warn when CA is absent.
+// the CA certificate; [check.Check] does not warn when CA is absent.
 type OrchestratorMTLSAuth struct {
 	Cert EnvFile `json:"cert"`
 	Key  EnvFile `json:"key"`
@@ -199,28 +199,30 @@ type EventSpec struct {
 }
 
 // EventSchema holds the path and MIME type of the event schema file.
-// Path is an absolute path inside the container image to the schema file.
-// MIMEType is the MIME type of the schema file, e.g. "application/json" or "application/yaml".
 type EventSchema struct {
-	Path     string `json:"path,omitempty"`
+	// Path is an absolute path inside the container image to the schema file.
+	Path string `json:"path,omitempty"`
+	// MIMEType is the MIME type of the schema file, e.g. "application/json" or "application/yaml".
 	MIMEType string `json:"mimetype,omitempty"`
 }
 
 // Image is an OAC-conformant OCI image returned by registry discovery.
 // It embeds Manifest for direct field promotion (Name(), Description(), SpecVersion).
-// Labels contains all OCI image config labels unfiltered — OAC and non-OAC alike.
 type Image struct {
 	Manifest
 
-	Labels    map[string]string `json:"labels"`
-	Reference string            `json:"reference"`
+	// Labels contains all OCI image config labels unfiltered — OAC and non-OAC alike.
+	Labels map[string]string `json:"labels"`
+	// Reference is the fully-qualified image reference (e.g. "registry.example.com/repo:tag")
+	// as seen during the discovery scan.
+	Reference string `json:"reference"`
 }
 
-// Dockerfile is an OAC-conformant Dockerfile parsed from the local filesystem.
-// It embeds Manifest for direct field promotion.
-// Path is the absolute path to the Dockerfile that was parsed.
+// Dockerfile is an OAC-conformant Dockerfile parsed from the local filesystem via the
+// dockerfile package. It embeds Manifest for direct field promotion.
 type Dockerfile struct {
 	Manifest
 
+	// Path is the absolute path to the source Dockerfile that was parsed.
 	Path string `json:"path"`
 }

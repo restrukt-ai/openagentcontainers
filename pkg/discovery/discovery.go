@@ -132,8 +132,8 @@ func WithLimiter(l *rate.Limiter) Option {
 }
 
 // WithCraneOpts appends crane options used for all registry requests, e.g. crane.Insecure for
-// plain-HTTP registries or crane.WithAuthFromKeychain(authn.DefaultKeychain) for private
-// registries requiring authentication.
+// plain-HTTP registries or crane.WithAuthFromKeychain(authn.DefaultKeychain) from
+// github.com/google/go-containerregistry/pkg/authn for private registries requiring authentication.
 func WithCraneOpts(opts ...crane.Option) Option {
 	return func(o *Options) {
 		o.craneOpts = append(o.craneOpts, opts...)

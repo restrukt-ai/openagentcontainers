@@ -24,7 +24,7 @@ import (
 	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
-// Severity indicates the severity of a lint issue.
+// Severity indicates the severity of a check finding.
 // SeverityError indicates a structural problem: a required field or credential source (env or
 // file) is missing and the image cannot function correctly. SeverityWarning indicates a
 // best-practice issue; the image may still work but is likely misconfigured.
@@ -40,14 +40,15 @@ const (
 	SeverityWarning Severity = "warning"
 )
 
-// Issue represents a single lint finding.
-// Field uses dot-notation matching the OAC label key suffix,
-// e.g. "inference.api_base", "mcp.calendar.bearer.token", "orchestrator.mtls.cert",
-// "workspace.data.path", "events.order-placed.schema.path".
+// Issue represents a single check finding.
 type Issue struct {
 	// Severity is the level of this finding ([SeverityError] or [SeverityWarning]).
 	Severity Severity `json:"severity"`
-	Field    string   `json:"field"`
+	// Field uses dot-notation matching the OAC label key suffix,
+	// e.g. "inference.api_base", "mcp.calendar.bearer.token", "orchestrator.mtls.cert",
+	// "workspace.data.path", "events.order-placed.schema.path".
+	// Suitable for JSON output and programmatic matching.
+	Field string `json:"field"`
 	// Message is a human-readable description of the issue.
 	Message string `json:"message"`
 }

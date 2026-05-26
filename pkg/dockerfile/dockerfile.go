@@ -19,8 +19,8 @@ import (
 )
 
 // ParseLabels reads r as a Dockerfile and returns all LABEL key-value pairs.
-// It correctly handles line continuations, quoted values, case-insensitive LABEL
-// keywords, and multiple key-value pairs on a single instruction.
+// It correctly handles line continuations, quoted values (which are stripped),
+// case-insensitive LABEL keywords, and multiple key-value pairs on a single instruction.
 func ParseLabels(r io.Reader) (map[string]string, error) {
 	result, err := parser.Parse(r)
 	if err != nil {
