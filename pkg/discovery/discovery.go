@@ -142,20 +142,6 @@ func WithCraneOpts(opts ...crane.Option) Option {
 
 const tagLatest = "latest"
 
-// AgentImage represents an OAC-conformant image found during registry discovery.
-// The embedded [oac.Manifest] carries the parsed spec; call Name(), Description(),
-// and SpecVersion directly on AgentImage via promotion. Reference is the
-// fully-qualified image ref. Labels contains all OCI image config labels unfiltered.
-type AgentImage struct {
-	oac.Manifest
-
-	// Labels contains all OCI image config labels, unfiltered. Use for custom filtering
-	// or to access non-OAC labels alongside the parsed manifest.
-	Labels map[string]string `json:"labels"`
-	// Reference is the fully-qualified image reference in the form "registry/repo:tag".
-	Reference string `json:"reference"`
-}
-
 // tagAction is the result of processing a cached tag.
 type tagAction int8
 
@@ -183,7 +169,7 @@ type imageConfig struct {
 // Cache behaviour is configured via WithCache. When a cache is present, images with
 // previously seen digests are not re-fetched, and repos confirmed non-OAC on the previous
 // scan are skipped. See [Cache] for the nil-agentJSON convention used to record non-OAC results.
-func Discover(ctx context.Context, registry string, opts Options) ([]AgentImage, error) {
+func Discover(ctx context.Context, registry string, opts Options) ([]oac.Image, error) {
 	var repos []string
 
 	err := withRetry(ctx, opts.limiter, opts.maxRetries, func() error {
@@ -198,7 +184,7 @@ func Discover(ctx context.Context, registry string, opts Options) ([]AgentImage,
 	}
 
 	jobs := make(chan string, len(repos))
-	results := make(chan AgentImage)
+	results := make(chan oac.Image)
 
 	var wg sync.WaitGroup
 
@@ -230,7 +216,7 @@ func Discover(ctx context.Context, registry string, opts Options) ([]AgentImage,
 
 	close(jobs)
 
-	var agents []AgentImage
+	var agents []oac.Image
 
 	for a := range results {
 		agents = append(agents, a)
@@ -255,7 +241,7 @@ func scanRepo(
 	force bool,
 	c Cache,
 	limiter *rate.Limiter,
-	out chan<- AgentImage,
+	out chan<- oac.Image,
 	opts ...crane.Option,
 ) {
 	var tags []string
@@ -293,7 +279,7 @@ func (rs repoScanner) processTag(
 	ctx context.Context,
 	repo, ref, tag string,
 	tagIndex int,
-	out chan<- AgentImage,
+	out chan<- oac.Image,
 ) bool {
 	digest := resolveDigest(ctx, rs.limiter, rs.maxRetries, ref, rs.opts)
 
@@ -315,7 +301,7 @@ func (rs repoScanner) dispatchCacheResult(
 	ref, digest string,
 	tagIndex int,
 	action tagAction,
-	out chan<- AgentImage,
+	out chan<- oac.Image,
 ) bool {
 	switch action {
 	case tagStop:
@@ -349,9 +335,9 @@ func (rs repoScanner) processCacheMiss(
 	ctx context.Context,
 	ref, digest string,
 	tagIndex int,
-	out chan<- AgentImage,
+	out chan<- oac.Image,
 ) bool {
-	var agent AgentImage
+	var agent oac.Image
 
 	var ok bool
 
@@ -385,7 +371,7 @@ func (rs repoScanner) processCacheMiss(
 }
 
 // emitAgent sends agent to out, returning true if the caller should stop (context done).
-func emitAgent(ctx context.Context, agent AgentImage, out chan<- AgentImage) bool {
+func emitAgent(ctx context.Context, agent oac.Image, out chan<- oac.Image) bool {
 	select {
 	case out <- agent:
 		return false
@@ -444,7 +430,7 @@ func handleCacheHit(
 	ctx context.Context,
 	c Cache,
 	digest, ref string,
-	out chan<- AgentImage,
+	out chan<- oac.Image,
 ) tagAction {
 	if digest == "" || c == nil {
 		return tagNotCached
@@ -456,7 +442,7 @@ func handleCacheHit(
 	}
 
 	if agentJSON != nil {
-		var agent AgentImage
+		var agent oac.Image
 
 		err := json.Unmarshal(agentJSON, &agent)
 		if err == nil {
@@ -512,22 +498,22 @@ func FetchLabels(ref string, opts ...crane.Option) (map[string]string, error) {
 	return cfg.Config.Labels, nil
 }
 
-func inspectImage(ref string, opts ...crane.Option) (AgentImage, bool, error) {
+func inspectImage(ref string, opts ...crane.Option) (oac.Image, bool, error) {
 	labels, err := FetchLabels(ref, opts...)
 	if err != nil {
-		return AgentImage{}, false, err
+		return oac.Image{}, false, err
 	}
 
 	if _, ok := labels[oac.LabelVersion]; !ok {
-		return AgentImage{}, false, nil
+		return oac.Image{}, false, nil
 	}
 
 	manifest, err := oac.Parse(labels)
 	if err != nil {
-		return AgentImage{}, false, err
+		return oac.Image{}, false, err
 	}
 
-	return AgentImage{
+	return oac.Image{
 		Manifest:  *manifest,
 		Reference: ref,
 		Labels:    labels,

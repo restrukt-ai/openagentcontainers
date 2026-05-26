@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
 	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
@@ -203,7 +202,7 @@ func TestWriteAgentsTable_WithData(t *testing.T) { //nolint:paralleltest // redi
 	old := os.Stdout
 	os.Stdout = w
 
-	agents := []discovery.AgentImage{
+	agents := []oac.Image{
 		{
 			Manifest: oac.Manifest{
 				SpecVersion: oac.VersionV1Alpha1,
@@ -259,7 +258,7 @@ func TestRunDiscover_JSONOutput(t *testing.T) { //nolint:paralleltest // redirec
 
 	require.NoError(t, err)
 
-	var agents []discovery.AgentImage
+	var agents []oac.Image
 	require.NoError(t, json.NewDecoder(&buf).Decode(&agents))
 	assert.GreaterOrEqual(t, len(agents), 1)
 }
@@ -366,7 +365,7 @@ func TestRunSearch_JSONOutput(t *testing.T) { //nolint:paralleltest // redirects
 
 	require.NoError(t, err)
 
-	var agents []discovery.AgentImage
+	var agents []oac.Image
 	require.NoError(t, json.NewDecoder(&buf).Decode(&agents))
 	assert.Len(t, agents, 1)
 }

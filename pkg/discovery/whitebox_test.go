@@ -13,6 +13,8 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"golang.org/x/time/rate"
+
+	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
 // ──────────────────────────────────────────────
@@ -175,7 +177,7 @@ func TestScanRepoListTagsError(t *testing.T) {
 	t.Parallel()
 	srv := errServer(t)
 
-	results := make(chan AgentImage, 10)
+	results := make(chan oac.Image, 10)
 
 	scanRepo(context.Background(), hostOf(srv)+"/repo", 1, false, nil,
 		rate.NewLimiter(rate.Inf, 0), results, crane.Insecure)
@@ -194,7 +196,7 @@ func TestScanRepoInspectImageErrorEarlyExit(t *testing.T) {
 	// Tags list succeeds; crane.Config fails (HEAD ok, GET 500).
 	srv := tagServer(t, []string{"latest", "v1.0"})
 
-	results := make(chan AgentImage, 10)
+	results := make(chan oac.Image, 10)
 
 	scanRepo(context.Background(), hostOf(srv)+"/repo", 1, false, nil,
 		rate.NewLimiter(rate.Inf, 0), results, crane.Insecure)
@@ -212,7 +214,7 @@ func TestScanRepoInspectImageErrorForce(t *testing.T) {
 	t.Parallel()
 	srv := tagServer(t, []string{"latest"})
 
-	results := make(chan AgentImage, 10)
+	results := make(chan oac.Image, 10)
 
 	scanRepo(context.Background(), hostOf(srv)+"/repo", 1, true, nil,
 		rate.NewLimiter(rate.Inf, 0), results, crane.Insecure)
@@ -284,7 +286,7 @@ func TestHandleCacheHitMalformedJSON(t *testing.T) {
 		digests:    map[string][]byte{"sha256:abc": []byte("{invalid")},
 		repoLatest: make(map[string]string),
 	}
-	out := make(chan AgentImage, 1)
+	out := make(chan oac.Image, 1)
 
 	action := handleCacheHit(context.Background(), c, "sha256:abc", "ref", out)
 	if action != tagContinue {
@@ -320,9 +322,9 @@ func TestEmitAgentContextCancelled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	out := make(chan AgentImage) // unbuffered, nobody reading
+	out := make(chan oac.Image) // unbuffered, nobody reading
 
-	got := emitAgent(ctx, AgentImage{}, out)
+	got := emitAgent(ctx, oac.Image{}, out)
 	if !got {
 		t.Fatal("expected true (ctx.Done() path taken)")
 	}

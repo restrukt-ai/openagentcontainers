@@ -3,8 +3,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/docker/cli v29.4.3+incompatible h1:u+UliYm2J/rYrIh2FqHQg32neRG8GjbvNuwQRTzGspU=
 github.com/docker/cli v29.4.3+incompatible/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
-github.com/docker/docker-credential-helpers v0.9.3 h1:gAm/VtF9wgqJMoxzT3Gj5p4AqIjCBS4wrsOh9yRqcz8=
-github.com/docker/docker-credential-helpers v0.9.3/go.mod h1:x+4Gbw9aGmChi3qTLZj8Dfn0TD20M/fuWy0E5+WDeCo=
+github.com/docker/docker-credential-helpers v0.9.5 h1:EFNN8DHvaiK8zVqFA2DT6BjXE0GzfLOZ38ggPTKePkY=
+github.com/docker/docker-credential-helpers v0.9.5/go.mod h1:v1S+hepowrQXITkEfw6o4+BMbGot02wiKpzWhGUZK6c=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/google/go-containerregistry v0.21.6 h1:T+yqQIlJXKrM98Om4DlW3GoWQAmhZuLMwoDOvVrtiUM=
@@ -19,8 +19,8 @@ github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJw
 github.com/opencontainers/image-spec v1.1.1/go.mod h1:qpqAh3Dmcf36wStyyWU+kCeDgrGnAve2nCC8+7h8Q0M=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/restrukt-ai/openagentcontainers/pkg v0.0.0-20260525073750-3ef085e6f32a h1:VuBvySwLJn3bwi8c9kk7+jmMEw2cn/vjkPLh+/bbpFU=
-github.com/restrukt-ai/openagentcontainers/pkg v0.0.0-20260525073750-3ef085e6f32a/go.mod h1:btlrYERcdvDoInoVk6dF6XPJLl1Ko40IouYQOuXLrpk=
+github.com/restrukt-ai/openagentcontainers/pkg v0.0.0-20260525222557-695f27e4e01c h1:bV62/58r+gpGZi7YxobXvCk3/4L/fwmNbIhvMy65lI4=
+github.com/restrukt-ai/openagentcontainers/pkg v0.0.0-20260525222557-695f27e4e01c/go.mod h1:btlrYERcdvDoInoVk6dF6XPJLl1Ko40IouYQOuXLrpk=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w=
 github.com/sirupsen/logrus v1.9.4/go.mod h1:ftWc9WdOfJ0a92nsE2jF5u5ZwH8Bv2zdeOC42RjbV2g=

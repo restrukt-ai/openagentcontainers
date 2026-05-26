@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
+	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
 // Search discovers all OAC-conformant images in registry and returns those
@@ -29,7 +30,7 @@ func Search(
 	ctx context.Context,
 	registry, query string,
 	opts discovery.Options,
-) ([]discovery.AgentImage, error) {
+) ([]oac.Image, error) {
 	agents, err := discovery.Discover(ctx, registry, opts)
 	if err != nil {
 		return nil, err
@@ -40,14 +41,14 @@ func Search(
 
 // filterAgents returns agents that match query across name, version, description,
 // and label values. An empty query passes all agents through.
-func filterAgents(agents []discovery.AgentImage, query string) []discovery.AgentImage {
+func filterAgents(agents []oac.Image, query string) []oac.Image {
 	if query == "" {
 		return agents
 	}
 
 	q := strings.ToLower(query)
 
-	var out []discovery.AgentImage
+	var out []oac.Image
 
 	for _, a := range agents {
 		if agentMatchesQuery(a, q) {
@@ -60,7 +61,7 @@ func filterAgents(agents []discovery.AgentImage, query string) []discovery.Agent
 
 // agentMatchesQuery returns true if the lowercased query is a substring of the
 // agent's name, version, description, or any label value.
-func agentMatchesQuery(a discovery.AgentImage, query string) bool {
+func agentMatchesQuery(a oac.Image, query string) bool {
 	if strings.Contains(strings.ToLower(a.Name()), query) {
 		return true
 	}

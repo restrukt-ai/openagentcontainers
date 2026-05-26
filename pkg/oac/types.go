@@ -17,7 +17,7 @@ package oac
 const (
 	LabelVersion = "org.openagentcontainers.version"
 	LabelName    = "org.openagentcontainers.name"
-	labelPrefix  = "org.openagentcontainers."
+	LabelPrefix  = "org.openagentcontainers."
 )
 
 // LabelDescription is an unofficial extension recognized by [Parse] but absent from
@@ -204,4 +204,23 @@ type EventSpec struct {
 type EventSchema struct {
 	Path     string `json:"path,omitempty"`
 	MIMEType string `json:"mimetype,omitempty"`
+}
+
+// Image is an OAC-conformant OCI image returned by registry discovery.
+// It embeds Manifest for direct field promotion (Name(), Description(), SpecVersion).
+// Labels contains all OCI image config labels unfiltered — OAC and non-OAC alike.
+type Image struct {
+	Manifest
+
+	Labels    map[string]string `json:"labels"`
+	Reference string            `json:"reference"`
+}
+
+// Dockerfile is an OAC-conformant Dockerfile parsed from the local filesystem.
+// It embeds Manifest for direct field promotion.
+// Path is the absolute path to the Dockerfile that was parsed.
+type Dockerfile struct {
+	Manifest
+
+	Path string `json:"path"`
 }

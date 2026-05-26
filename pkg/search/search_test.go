@@ -4,7 +4,6 @@ import (
 	"maps"
 	"testing"
 
-	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
 	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
@@ -14,7 +13,7 @@ func agent(
 	name, description string,
 	sv oac.SpecVersion,
 	extraLabels map[string]string,
-) discovery.AgentImage {
+) oac.Image {
 	labels := map[string]string{
 		oac.LabelVersion:     string(sv),
 		oac.LabelName:        name,
@@ -28,14 +27,14 @@ func agent(
 		panic(err)
 	}
 
-	return discovery.AgentImage{
+	return oac.Image{
 		Manifest:  *m,
 		Labels:    labels,
 		Reference: "reg.example.com/" + name + ":latest",
 	}
 }
 
-var testAgents = []discovery.AgentImage{
+var testAgents = []oac.Image{
 	agent(
 		"web-scraper",
 		"Scrapes websites for data",
@@ -156,7 +155,7 @@ func TestFilterAgentsNilInput(t *testing.T) {
 func TestFilterAgentsEmptyInput(t *testing.T) {
 	t.Parallel()
 
-	got := filterAgents(make([]discovery.AgentImage, 0), "anything")
+	got := filterAgents(make([]oac.Image, 0), "anything")
 	if len(got) != 0 {
 		t.Fatalf("empty input: got %d agents", len(got))
 	}
@@ -210,7 +209,7 @@ func TestAgentMatchesQueryNoMatch(t *testing.T) {
 func TestAgentMatchesQueryEmptyAgent(t *testing.T) {
 	t.Parallel()
 
-	if agentMatchesQuery(discovery.AgentImage{}, "anything") {
+	if agentMatchesQuery(oac.Image{}, "anything") {
 		t.Fatal("empty agent should not match non-empty query")
 	}
 }

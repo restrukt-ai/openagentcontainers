@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,60 +12,6 @@ import (
 
 	"github.com/restrukt-ai/openagentcontainers/pkg/check"
 )
-
-// --- parseLabelPairs ---
-
-func TestParseLabelPairs_SingleQuoted(t *testing.T) {
-	t.Parallel()
-
-	got := parseLabelPairs(`org.openagentcontainers.name="my-agent"`)
-	assert.Equal(t, map[string]string{"org.openagentcontainers.name": "my-agent"}, got)
-}
-
-func TestParseLabelPairs_SingleUnquoted(t *testing.T) {
-	t.Parallel()
-
-	got := parseLabelPairs(`key=value`)
-	assert.Equal(t, map[string]string{"key": "value"}, got)
-}
-
-func TestParseLabelPairs_MultiplePairs(t *testing.T) {
-	t.Parallel()
-
-	got := parseLabelPairs(`key1="v1" key2="v2"`)
-	assert.Equal(t, map[string]string{"key1": "v1", "key2": "v2"}, got)
-}
-
-func TestParseLabelPairs_EscapedQuote(t *testing.T) {
-	t.Parallel()
-
-	got := parseLabelPairs(`key="val\"ue"`)
-	assert.Equal(t, map[string]string{"key": `val"ue`}, got)
-}
-
-func TestParseLabelPairs_EmptyQuotedValue(t *testing.T) {
-	t.Parallel()
-
-	got := parseLabelPairs(`key=""`)
-	assert.Equal(t, map[string]string{"key": ""}, got)
-}
-
-func TestParseLabelPairs_EmptyInput(t *testing.T) {
-	t.Parallel()
-
-	got := parseLabelPairs(``)
-	assert.Empty(t, got)
-}
-
-func TestParseLabelPairs_NoEquals(t *testing.T) {
-	t.Parallel()
-
-	// A token without '=' produces no entries.
-	got := parseLabelPairs(`keyonly`)
-	assert.Empty(t, got)
-}
-
-// --- parseDockerfileLabels ---
 
 func writeDockerfile(t *testing.T, content string) string {
 	t.Helper()
@@ -79,80 +24,6 @@ func writeDockerfile(t *testing.T, content string) string {
 	require.NoError(t, f.Close())
 
 	return f.Name()
-}
-
-func TestParseDockerfileLabels_SingleLabels(t *testing.T) {
-	t.Parallel()
-
-	path := writeDockerfile(t, `FROM alpine
-LABEL org.openagentcontainers.version="v1alpha2"
-LABEL org.openagentcontainers.name="test-agent"
-`)
-
-	labels, err := parseDockerfileLabels(path)
-	require.NoError(t, err)
-	assert.Equal(t, "v1alpha2", labels["org.openagentcontainers.version"])
-	assert.Equal(t, "test-agent", labels["org.openagentcontainers.name"])
-}
-
-func TestParseDockerfileLabels_MultiPairLine(t *testing.T) {
-	t.Parallel()
-
-	path := writeDockerfile(t, `FROM alpine
-LABEL key1="v1" key2="v2"
-`)
-
-	labels, err := parseDockerfileLabels(path)
-	require.NoError(t, err)
-	assert.Equal(t, "v1", labels["key1"])
-	assert.Equal(t, "v2", labels["key2"])
-}
-
-func TestParseDockerfileLabels_LineContinuation(t *testing.T) {
-	t.Parallel()
-
-	path := writeDockerfile(t, `FROM alpine
-LABEL key1="v1" \
-      key2="v2"
-`)
-
-	labels, err := parseDockerfileLabels(path)
-	require.NoError(t, err)
-	assert.Equal(t, "v1", labels["key1"])
-	assert.Equal(t, "v2", labels["key2"])
-}
-
-func TestParseDockerfileLabels_NonLabelLinesIgnored(t *testing.T) {
-	t.Parallel()
-
-	path := writeDockerfile(t, `FROM alpine:3.21
-RUN apk add --no-cache ca-certificates
-COPY . /app
-CMD ["/app/agent"]
-`)
-
-	labels, err := parseDockerfileLabels(path)
-	require.NoError(t, err)
-	assert.Empty(t, labels)
-}
-
-func TestParseDockerfileLabels_LabelCaseInsensitive(t *testing.T) {
-	t.Parallel()
-
-	path := writeDockerfile(t, `FROM alpine
-label key="value"
-`)
-
-	labels, err := parseDockerfileLabels(path)
-	require.NoError(t, err)
-	assert.Equal(t, "value", labels["key"])
-}
-
-func TestParseDockerfileLabels_FileNotFound(t *testing.T) {
-	t.Parallel()
-
-	_, err := parseDockerfileLabels(filepath.Join(t.TempDir(), "nonexistent"))
-	require.Error(t, err)
 }
 
 // --- detectInputMode ---

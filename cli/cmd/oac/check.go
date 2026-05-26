@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -15,6 +13,7 @@ import (
 
 	"github.com/restrukt-ai/openagentcontainers/pkg/check"
 	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
+	"github.com/restrukt-ai/openagentcontainers/pkg/dockerfile"
 	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
 
@@ -59,141 +58,6 @@ func detectInputMode(arg string, f checkFlags) inputMode {
 	return modeImage
 }
 
-func parseDockerfileLabels(path string) (map[string]string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-
-	defer f.Close()
-
-	result := make(map[string]string)
-	scanner := bufio.NewScanner(f)
-
-	var logicalLine strings.Builder
-
-	for scanner.Scan() {
-		raw := scanner.Text()
-
-		if trimmed, ok := strings.CutSuffix(raw, "\\"); ok {
-			logicalLine.WriteString(trimmed) //nolint:errcheck // strings.Builder never errors
-
-			continue
-		}
-
-		logicalLine.WriteString(raw) //nolint:errcheck // strings.Builder never errors
-		line := logicalLine.String()
-		logicalLine.Reset()
-
-		trimmed := strings.TrimSpace(line)
-
-		if !strings.HasPrefix(strings.ToUpper(trimmed), "LABEL ") {
-			continue
-		}
-
-		labelPart := strings.TrimSpace(trimmed[len("LABEL "):])
-		maps.Copy(result, parseLabelPairs(labelPart))
-	}
-
-	err = scanner.Err()
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func skipLabelWhitespace(s string, i, n int) int {
-	for i < n && (s[i] == ' ' || s[i] == '\t') {
-		i++
-	}
-
-	return i
-}
-
-func readLabelKey(s string, i, n int) (string, int, bool) {
-	keyStart := i
-
-	for i < n && s[i] != '=' && s[i] != ' ' && s[i] != '\t' {
-		i++
-	}
-
-	key := s[keyStart:i]
-
-	if i >= n || s[i] != '=' || key == "" {
-		return "", i, false
-	}
-
-	i++ // skip '='
-
-	return key, i, true
-}
-
-func readQuotedLabelValue(s string, i, n int) (string, int) {
-	i++ // skip opening quote
-
-	var buf strings.Builder
-
-	for i < n && s[i] != '"' {
-		if s[i] == '\\' && i+1 < n {
-			i++
-		}
-
-		buf.WriteByte(s[i]) //nolint:errcheck // strings.Builder never errors
-		i++
-	}
-
-	if i < n {
-		i++ // skip closing quote
-	}
-
-	return buf.String(), i
-}
-
-func readUnquotedLabelValue(s string, i, n int) (string, int) {
-	valueStart := i
-
-	for i < n && s[i] != ' ' && s[i] != '\t' {
-		i++
-	}
-
-	return s[valueStart:i], i
-}
-
-func parseLabelPairs(s string) map[string]string {
-	result := make(map[string]string)
-	i := 0
-	n := len(s)
-
-	for i < n {
-		i = skipLabelWhitespace(s, i, n)
-		if i >= n {
-			break
-		}
-
-		key, next, ok := readLabelKey(s, i, n)
-		if !ok {
-			break
-		}
-
-		i = next
-
-		var value string
-
-		if i < n && s[i] == '"' {
-			value, i = readQuotedLabelValue(s, i, n)
-		} else {
-			value, i = readUnquotedLabelValue(s, i, n)
-		}
-
-		if key != "" {
-			result[key] = value
-		}
-	}
-
-	return result
-}
-
 func checkCmd() *cobra.Command {
 	var f checkFlags
 
@@ -217,7 +81,13 @@ func checkCmd() *cobra.Command {
 func fetchLabels(args []string, f checkFlags) (map[string]string, error) {
 	switch detectInputMode(args[0], f) {
 	case modeDockerfile:
-		return parseDockerfileLabels(args[0])
+		file, err := os.Open(args[0])
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+
+		return dockerfile.ParseLabels(file)
 	case modeImage:
 		var craneOpts []crane.Option
 

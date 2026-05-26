@@ -13,6 +13,7 @@ import (
 
 	"github.com/restrukt-ai/openagentcontainers/cli/cmd/internal/scancache"
 	"github.com/restrukt-ai/openagentcontainers/pkg/discovery"
+	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 	"github.com/restrukt-ai/openagentcontainers/pkg/search"
 )
 
@@ -127,7 +128,7 @@ func saveCache(c discovery.Cache) {
 }
 
 // writeAgentsTable writes agents as a tabwriter table.
-func writeAgentsTable(agents []discovery.AgentImage) error {
+func writeAgentsTable(agents []oac.Image) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, tabwriterPadding, ' ', 0)
 	fmt.Fprintln(w, "REFERENCE\tNAME\tVERSION\tDESCRIPTION")
 

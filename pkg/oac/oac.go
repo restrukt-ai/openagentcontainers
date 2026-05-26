@@ -181,11 +181,11 @@ func labelsToTree(labels map[string]string) map[string]any {
 	tree := make(map[string]any)
 
 	for key, val := range labels {
-		if !strings.HasPrefix(key, labelPrefix) {
+		if !strings.HasPrefix(key, LabelPrefix) {
 			continue
 		}
 
-		suffix := strings.TrimPrefix(key, labelPrefix)
+		suffix := strings.TrimPrefix(key, LabelPrefix)
 
 		if suffix == "version" {
 			continue
