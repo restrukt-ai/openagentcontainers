@@ -7,6 +7,12 @@ tasks:
       - task: lint:golangci-lint
       - task: lint:govulncheck
       - task: lint:nilaway
+      - task: lint:go-arch-lint
+
+  lint:go-arch-lint:
+    desc: Check internal package dependency boundaries
+    cmds:
+      - go-arch-lint check
 
   lint:golangci-lint:
     desc: Run golangci-lint

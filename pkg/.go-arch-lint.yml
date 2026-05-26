@@ -1,22 +1,44 @@
+# THIS CONFIG IS FROZEN. DO NOT MODIFY TO SUPPRESS VIOLATIONS.
+# Violations are implementation problems, not config problems.
+# See docs/refactor-plan.md Section 9 for rationale.
+#
+# Notes:
+# - vendor imports are unrestricted (go-arch-lint enforces internal boundaries only)
+# - test files are excluded: external _test packages self-import the package under
+#   test, which go-arch-lint otherwise flags as a spurious self-dependency
+# - oac is listed in components but omitted from deps: it is the foundation package
+#   with no internal imports; Go's circular-import prevention enforces this already,
+#   and an empty mayDependOn array is invalid go-arch-lint syntax
 version: 2
 workdir: .
-allow:
-  depOnAnyVendor: false
+excludeFiles:
+  - ".*_test\\.go$"
 components:
   oac:
     in: oac
+  check:
+    in: check
   discovery:
     in: discovery
+  dockerfile:
+    in: dockerfile
   search:
     in: search
 deps:
-  oac:
+  check:
     anyVendorDeps: true
+    mayDependOn:
+      - oac
   discovery:
+    anyVendorDeps: true
+    mayDependOn:
+      - oac
+  dockerfile:
     anyVendorDeps: true
     mayDependOn:
       - oac
   search:
     anyVendorDeps: true
     mayDependOn:
+      - oac
       - discovery

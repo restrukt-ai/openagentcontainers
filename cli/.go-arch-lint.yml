@@ -1,16 +1,24 @@
+# THIS CONFIG IS FROZEN. DO NOT MODIFY TO SUPPRESS VIOLATIONS.
+# Violations are implementation problems, not config problems.
+# See docs/refactor-plan.md Section 9 for rationale.
+#
+# Notes:
+# - anyVendorDeps: true allows all external imports (pkg/* are cross-module,
+#   treated as external/vendor from the cli module's perspective)
+# - test files are excluded: external _test packages self-import the package under test
+# - scancache is listed in components but omitted from deps: it has no internal
+#   imports; Go's circular-import prevention already enforces this
 version: 2
 workdir: .
-allow:
-  depOnAnyVendor: false
+excludeFiles:
+  - ".*_test\\.go$"
 components:
-  cmd/oac:
-    in: cmd/oac
-  cmd/internal/scancache:
+  scancache:
     in: cmd/internal/scancache
+  cli:
+    in: cmd/oac
 deps:
-  cmd/internal/scancache:
-    anyVendorDeps: true
-  cmd/oac:
+  cli:
     anyVendorDeps: true
     mayDependOn:
-      - cmd/internal/scancache
+      - scancache
