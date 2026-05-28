@@ -173,7 +173,7 @@ The following are left to the runtime harness inside the image:
 
 The OAC specification is open source, maintained at
 [github.com/restrukt-ai/openagentcontainers](https://github.com/restrukt-ai/openagentcontainers)
-under the CC BY 4.0 license.
+under the Apache 2.0 license.
 
 The spec is a living document. If something is unclear, incomplete, or wrong — open an issue.
 If you're building an OAC-compliant harness or orchestrator and ran into an edge case the spec
