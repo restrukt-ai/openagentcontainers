@@ -164,7 +164,7 @@ func TestLint_MCPBearerTokenNoSource(t *testing.T) {
 				MCP: map[string]oac.MCPSpec{
 					"srv": {
 						Bearer: &oac.MCPBearerAuth{
-							Token: oac.EnvFile{}, // neither env nor file
+							Token: oac.CredentialTarget{}, // neither env nor file
 						},
 					},
 				},
@@ -205,8 +205,8 @@ func TestLint_MCPOAuthClientIDNoSource(t *testing.T) {
 				MCP: map[string]oac.MCPSpec{
 					"srv": {
 						OAuth: &oac.MCPOAuthAuth{
-							ClientID:     oac.EnvFile{},              // no source
-							ClientSecret: oac.EnvFile{Env: "SECRET"}, // has source
+							ClientID:     oac.CredentialTarget{},              // no source
+							ClientSecret: oac.CredentialTarget{Env: "SECRET"}, // has source
 						},
 					},
 				},
@@ -232,8 +232,8 @@ func TestLint_MCPOAuthClientSecretNoSource(t *testing.T) {
 				MCP: map[string]oac.MCPSpec{
 					"srv": {
 						OAuth: &oac.MCPOAuthAuth{
-							ClientID:     oac.EnvFile{Env: "ID"}, // has source
-							ClientSecret: oac.EnvFile{},          // no source
+							ClientID:     oac.CredentialTarget{Env: "ID"}, // has source
+							ClientSecret: oac.CredentialTarget{},          // no source
 						},
 					},
 				},
@@ -259,9 +259,9 @@ func TestLint_MCPDCRNoScopes(t *testing.T) {
 				MCP: map[string]oac.MCPSpec{
 					"srv": {
 						DCR: &oac.MCPDCRAuth{
-							Scopes:       "", // no scopes
-							ClientID:     oac.EnvFile{Env: "ID"},
-							ClientSecret: oac.EnvFile{Env: "SECRET"},
+							Scopes:       nil, // no scopes
+							ClientID:     oac.CredentialTarget{Env: "ID"},
+							ClientSecret: oac.CredentialTarget{Env: "SECRET"},
 						},
 					},
 				},
@@ -287,9 +287,9 @@ func TestLint_MCPDCRClientIDNoSource(t *testing.T) {
 				MCP: map[string]oac.MCPSpec{
 					"srv": {
 						DCR: &oac.MCPDCRAuth{
-							Scopes:       "repo:read",
-							ClientID:     oac.EnvFile{},              // no source
-							ClientSecret: oac.EnvFile{Env: "SECRET"}, // has source
+							Scopes:       []string{"repo:read"},
+							ClientID:     oac.CredentialTarget{},              // no source
+							ClientSecret: oac.CredentialTarget{Env: "SECRET"}, // has source
 						},
 					},
 				},
@@ -344,7 +344,7 @@ func TestLint_OrchestratorBearerNoSource(t *testing.T) {
 				Orchestrator: &oac.OrchestratorSpec{
 					Env: "ORCHESTRATOR_ADDR",
 					Bearer: &oac.OrchestratorBearerAuth{
-						Token: oac.EnvFile{}, // no source
+						Token: oac.CredentialTarget{}, // no source
 					},
 				},
 			},
@@ -369,8 +369,8 @@ func TestLint_OrchestratorMTLSCertNoSource(t *testing.T) {
 				Orchestrator: &oac.OrchestratorSpec{
 					Env: "ORCHESTRATOR_ADDR",
 					MTLS: &oac.OrchestratorMTLSAuth{
-						Cert: oac.EnvFile{},             // no source
-						Key:  oac.EnvFile{File: "/key"}, // has source
+						Cert: oac.CredentialTarget{},             // no source
+						Key:  oac.CredentialTarget{File: "/key"}, // has source
 					},
 				},
 			},
@@ -395,8 +395,8 @@ func TestLint_OrchestratorMTLSKeyNoSource(t *testing.T) {
 				Orchestrator: &oac.OrchestratorSpec{
 					Env: "ORCHESTRATOR_ADDR",
 					MTLS: &oac.OrchestratorMTLSAuth{
-						Cert: oac.EnvFile{File: "/cert"}, // has source
-						Key:  oac.EnvFile{},              // no source
+						Cert: oac.CredentialTarget{File: "/cert"}, // has source
+						Key:  oac.CredentialTarget{},              // no source
 					},
 				},
 			},
@@ -418,7 +418,7 @@ func TestLint_WorkspacePathEmpty(t *testing.T) {
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "test-agent",
-				Workspace: map[string]oac.WorkspaceSpec{
+				Workspaces: map[string]oac.WorkspaceSpec{
 					"code": {Path: ""},
 				},
 			},
@@ -556,7 +556,7 @@ func TestCheck_SessionIsolation(t *testing.T) {
 		V1Alpha2: &oac.V1Alpha2Spec{
 			V1Alpha1Spec: oac.V1Alpha1Spec{
 				Name: "agent",
-				Workspace: map[string]oac.WorkspaceSpec{
+				Workspaces: map[string]oac.WorkspaceSpec{
 					"code": {Path: "/workspace"},
 				},
 			},
@@ -576,13 +576,13 @@ func TestLint_EnvFile_TableDriven(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		token       oac.EnvFile
+		token       oac.CredentialTarget
 		expectError bool
 	}{
-		{"neither", oac.EnvFile{}, true},
-		{"env only", oac.EnvFile{Env: "MY_TOKEN"}, false},
-		{"file only", oac.EnvFile{File: "/run/secrets/token"}, false},
-		{"both", oac.EnvFile{Env: "MY_TOKEN", File: "/run/secrets/token"}, false},
+		{"neither", oac.CredentialTarget{}, true},
+		{"env only", oac.CredentialTarget{Env: "MY_TOKEN"}, false},
+		{"file only", oac.CredentialTarget{File: "/run/secrets/token"}, false},
+		{"both", oac.CredentialTarget{Env: "MY_TOKEN", File: "/run/secrets/token"}, false},
 	}
 
 	for _, tt := range tests {

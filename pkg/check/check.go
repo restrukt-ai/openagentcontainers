@@ -68,7 +68,7 @@ func Check(m *oac.Manifest) []Issue {
 		spec = m.V1Alpha1
 	case m.V1Alpha2 != nil:
 		spec = &m.V1Alpha2.V1Alpha1Spec
-		if m.V1Alpha2.Session.Isolation && len(m.V1Alpha2.Workspace) > 0 {
+		if m.V1Alpha2.Session.Isolation && len(m.V1Alpha2.Workspaces) > 0 {
 			issues = append(issues, Issue{
 				Severity: SeverityError,
 				Field:    "session.isolation",
@@ -90,7 +90,7 @@ func checkSpec(spec *oac.V1Alpha1Spec, issues *[]Issue) {
 	checkInference(spec.Inference, issues)
 	checkMCPs(spec.MCP, issues)
 	checkOrchestrator(spec.Orchestrator, issues)
-	checkWorkspaces(spec.Workspace, issues)
+	checkWorkspaces(spec.Workspaces, issues)
 	checkEvents(spec.Events, issues)
 }
 
@@ -195,7 +195,7 @@ func checkMCP(name string, m oac.MCPSpec, issues *[]Issue) {
 	}
 
 	if m.DCR != nil {
-		if m.DCR.Scopes == "" {
+		if len(m.DCR.Scopes) == 0 {
 			*issues = append(*issues, Issue{
 				Severity: SeverityWarning,
 				Field:    "mcp." + name + ".dcr.scopes",
@@ -296,7 +296,7 @@ func checkEvents(evs map[string]oac.EventSpec, issues *[]Issue) {
 	}
 }
 
-func checkEnvFile(field string, ef oac.EnvFile, issues *[]Issue) {
+func checkEnvFile(field string, ef oac.CredentialTarget, issues *[]Issue) {
 	if ef.Env == "" && ef.File == "" {
 		*issues = append(*issues, Issue{
 			Severity: SeverityError,

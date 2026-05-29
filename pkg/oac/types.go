@@ -82,7 +82,7 @@ type V1Alpha1Spec struct {
 	Description  string                   `json:"description,omitempty"`
 	Inference    *InferenceSpec           `json:"inference,omitempty"`
 	MCP          map[string]MCPSpec       `json:"mcp,omitempty"`
-	Workspace    map[string]WorkspaceSpec `json:"workspace,omitempty"`
+	Workspaces   map[string]WorkspaceSpec `json:"workspace,omitempty"`
 	Orchestrator *OrchestratorSpec        `json:"orchestrator,omitempty"`
 	Events       map[string]EventSpec     `json:"events,omitempty"`
 }
@@ -107,12 +107,12 @@ type SessionSpec struct {
 	Isolation bool `json:"isolation,omitempty"`
 }
 
-// EnvFile describes where a credential value is delivered at runtime.
+// CredentialTarget describes where a credential value is delivered at runtime.
 // Env is the name of an environment variable; File is an absolute filesystem path.
 // The orchestrator injects the credential value into whichever source(s) are declared.
 // Setting both allows fallback: the runtime checks Env first, then File.
 // At least one of Env or File must be non-empty; this is enforced by [check.Check], not [Parse].
-type EnvFile struct {
+type CredentialTarget struct {
 	Env  string `json:"env,omitempty"`
 	File string `json:"file,omitempty"`
 }
@@ -120,16 +120,16 @@ type EnvFile struct {
 // InferenceSpec describes the agent's inference configuration.
 // Types is populated by a custom UnmarshalJSON and holds per-type model lists.
 type InferenceSpec struct {
-	APIBase *EnvFile                     `json:"api_base,omitempty"`
-	APIKey  *EnvFile                     `json:"api_key,omitempty"`
+	APIBase *CredentialTarget            `json:"api_base,omitempty"`
+	APIKey  *CredentialTarget            `json:"api_key,omitempty"`
 	Types   map[string]InferenceTypeSpec `json:"-"` // populated by UnmarshalJSON
 }
 
 // InferenceTypeSpec holds the model list for a single inference type.
 type InferenceTypeSpec struct {
-	// Models is a space-separated list of model identifiers accepted by this inference
-	// type, e.g. "gpt-4o llama-3.1-8b-instruct".
-	Models string `json:"models,omitempty"`
+	// Models is a pre-split list of model identifiers accepted by this inference type.
+	// Populated by UnmarshalJSON; the label value is space-separated, e.g. "gpt-4o llama-3.1-8b-instruct".
+	Models []string `json:"models"` // populated by UnmarshalJSON
 }
 
 // MCPSpec describes an MCP server's authentication configuration.
@@ -144,22 +144,22 @@ type MCPSpec struct {
 
 // MCPBearerAuth carries a bearer token credential for an MCP server.
 type MCPBearerAuth struct {
-	Token EnvFile `json:"token"`
+	Token CredentialTarget `json:"token"`
 }
 
 // MCPOAuthAuth carries OAuth2 client credentials for an MCP server.
 type MCPOAuthAuth struct {
-	ClientID     EnvFile `json:"client_id"`
-	ClientSecret EnvFile `json:"client_secret"`
+	ClientID     CredentialTarget `json:"client_id"`
+	ClientSecret CredentialTarget `json:"client_secret"`
 }
 
 // MCPDCRAuth carries Dynamic Client Registration credentials for an MCP server.
 type MCPDCRAuth struct {
-	// Scopes is an optional space-separated list of OAuth scopes to request
-	// during Dynamic Client Registration.
-	Scopes       string  `json:"scopes,omitempty"`
-	ClientID     EnvFile `json:"client_id"`
-	ClientSecret EnvFile `json:"client_secret"`
+	// Scopes is the pre-split list of OAuth scopes to request during Dynamic Client Registration.
+	// Populated by UnmarshalJSON; the label value is space-separated, e.g. "repo:read repo:write".
+	Scopes       []string         `json:"scopes"` // populated by UnmarshalJSON
+	ClientID     CredentialTarget `json:"client_id"`
+	ClientSecret CredentialTarget `json:"client_secret"`
 }
 
 // WorkspaceSpec describes a mounted workspace volume.
@@ -179,16 +179,16 @@ type OrchestratorSpec struct {
 
 // OrchestratorBearerAuth carries a bearer token for orchestrator authentication.
 type OrchestratorBearerAuth struct {
-	Token EnvFile `json:"token"`
+	Token CredentialTarget `json:"token"`
 }
 
 // OrchestratorMTLSAuth carries mTLS credentials for orchestrator authentication.
 // Cert and Key are required credential sources. CA is optional — the orchestrator provisions
 // the CA certificate; [check.Check] does not warn when CA is absent.
 type OrchestratorMTLSAuth struct {
-	Cert EnvFile `json:"cert"`
-	Key  EnvFile `json:"key"`
-	CA   EnvFile `json:"ca"`
+	Cert CredentialTarget `json:"cert"`
+	Key  CredentialTarget `json:"key"`
+	CA   CredentialTarget `json:"ca"`
 }
 
 // EventSpec describes an event subscription with an embedded schema.

@@ -66,17 +66,17 @@ func TestParse_V1Alpha2_FullLabels(t *testing.T) {
 	require.NotNil(t, s.Inference.APIKey)
 	assert.Equal(t, "OPENAI_API_KEY", s.Inference.APIKey.Env)
 	require.Contains(t, s.Inference.Types, "chat-completions")
-	assert.Equal(t, "gpt-4o", s.Inference.Types["chat-completions"].Models)
+	assert.Equal(t, []string{"gpt-4o"}, s.Inference.Types["chat-completions"].Models)
 	require.Contains(t, s.Inference.Types, "embeddings")
-	assert.Equal(t, "text-embedding-004", s.Inference.Types["embeddings"].Models)
+	assert.Equal(t, []string{"text-embedding-004"}, s.Inference.Types["embeddings"].Models)
 
 	require.Contains(t, s.MCP, "srv")
 	require.NotNil(t, s.MCP["srv"].Bearer)
 	assert.Equal(t, "SRV_TOKEN", s.MCP["srv"].Bearer.Token.Env)
 
-	require.Contains(t, s.Workspace, "code")
-	assert.Equal(t, "/workspace/code", s.Workspace["code"].Path)
-	assert.True(t, s.Workspace["code"].Mutable)
+	require.Contains(t, s.Workspaces, "code")
+	assert.Equal(t, "/workspace/code", s.Workspaces["code"].Path)
+	assert.True(t, s.Workspaces["code"].Mutable)
 
 	require.Contains(t, s.Events, "start")
 	assert.Equal(t, "/oac/schemas/start.json", s.Events["start"].Schema.Path)
@@ -112,7 +112,7 @@ func TestParse_InferenceMultipleTypes(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, m.V1Alpha2.Inference)
 			require.Contains(t, m.V1Alpha2.Inference.Types, tt.typeKey)
-			assert.Equal(t, tt.models, m.V1Alpha2.Inference.Types[tt.typeKey].Models)
+			assert.Equal(t, []string{tt.models}, m.V1Alpha2.Inference.Types[tt.typeKey].Models)
 		})
 	}
 }
@@ -187,7 +187,7 @@ func TestParse_MCPDCRWithScopes(t *testing.T) {
 	require.Contains(t, m.V1Alpha2.MCP, "srv")
 	srv := m.V1Alpha2.MCP["srv"]
 	require.NotNil(t, srv.DCR)
-	assert.Equal(t, "repo:read repo:write", srv.DCR.Scopes)
+	assert.Equal(t, []string{"repo:read", "repo:write"}, srv.DCR.Scopes)
 	assert.Equal(t, "MY_CLIENT_ID", srv.DCR.ClientID.Env)
 	assert.Equal(t, "/run/secrets/secret", srv.DCR.ClientSecret.File)
 }
@@ -229,8 +229,8 @@ func TestParse_WorkspaceMutable(t *testing.T) {
 	m, err := oac.Parse(labels)
 	require.NoError(t, err)
 	require.NotNil(t, m.V1Alpha2)
-	require.Contains(t, m.V1Alpha2.Workspace, "repo")
-	ws := m.V1Alpha2.Workspace["repo"]
+	require.Contains(t, m.V1Alpha2.Workspaces, "repo")
+	ws := m.V1Alpha2.Workspaces["repo"]
 	assert.Equal(t, "/workspace/repo", ws.Path)
 	assert.True(t, ws.Mutable)
 }

@@ -99,7 +99,7 @@ func ExampleSessionSpec() {
 	// true
 }
 
-func ExampleEnvFile() {
+func ExampleCredentialTarget() {
 	// Both env and file can be set simultaneously as a fallback pair.
 	labels := map[string]string{
 		"org.openagentcontainers.version":                        "v1alpha1",
@@ -143,7 +143,7 @@ func ExampleInferenceSpec() {
 	fmt.Println(inf.Types["chat"].Models)
 	// Output:
 	// INFERENCE_BASE_URL
-	// gpt-4o gpt-4o-mini
+	// [gpt-4o gpt-4o-mini]
 }
 
 func ExampleInferenceTypeSpec() {
@@ -162,7 +162,7 @@ func ExampleInferenceTypeSpec() {
 
 	fmt.Println(m.V1Alpha1.Inference.Types["chat"].Models)
 	// Output:
-	// gpt-4o llama-3.1-8b-instruct
+	// [gpt-4o llama-3.1-8b-instruct]
 }
 
 func ExampleMCPSpec() {
@@ -251,7 +251,7 @@ func ExampleMCPDCRAuth() {
 	fmt.Println(dcr.Scopes)
 	fmt.Println(dcr.ClientID.Env)
 	// Output:
-	// calendar:read calendar:write
+	// [calendar:read calendar:write]
 	// CALENDAR_CLIENT_ID
 }
 
@@ -270,7 +270,7 @@ func ExampleWorkspaceSpec() {
 		log.Fatal(err)
 	}
 
-	ws := m.V1Alpha1.Workspace["data"]
+	ws := m.V1Alpha1.Workspaces["data"]
 	fmt.Println(ws.Path)
 	fmt.Println(ws.Mutable)
 	// Output:

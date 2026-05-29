@@ -98,16 +98,16 @@ func decodeStrict(v json.RawMessage, dst any) error {
 	return dec.Decode(dst)
 }
 
-// decodeEnvFileField decodes the named key from raw into dst (an *EnvFile),
+// decodeEnvFileField decodes the named key from raw into dst (a *CredentialTarget),
 // removes the key from raw, and reports whether the key was present.
 // Returns an error only when the key is present but decoding fails.
-func decodeEnvFileField(raw map[string]json.RawMessage, key string, dst **EnvFile) error {
+func decodeEnvFileField(raw map[string]json.RawMessage, key string, dst **CredentialTarget) error {
 	v, ok := raw[key]
 	if !ok {
 		return nil
 	}
 
-	ef := new(EnvFile)
+	ef := new(CredentialTarget)
 
 	err := decodeStrict(v, ef)
 	if err != nil {
@@ -142,6 +142,50 @@ func inferenceTypesFromRaw(raw map[string]json.RawMessage) (map[string]Inference
 	}
 
 	return types, nil
+}
+
+// UnmarshalJSON implements custom unmarshaling for InferenceTypeSpec.
+// It reads "models" as a space-separated string and splits it into a []string.
+func (ts *InferenceTypeSpec) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Models string `json:"models,omitempty"`
+	}
+
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+
+	err := dec.Decode(&raw)
+	if err != nil {
+		return err
+	}
+
+	ts.Models = strings.Fields(raw.Models)
+
+	return nil
+}
+
+// UnmarshalJSON implements custom unmarshaling for MCPDCRAuth.
+// It reads "scopes" as a space-separated string and splits it into a []string.
+func (d *MCPDCRAuth) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Scopes       string           `json:"scopes,omitempty"`
+		ClientID     CredentialTarget `json:"client_id"`
+		ClientSecret CredentialTarget `json:"client_secret"`
+	}
+
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+
+	err := dec.Decode(&raw)
+	if err != nil {
+		return err
+	}
+
+	d.Scopes = strings.Fields(raw.Scopes)
+	d.ClientID = raw.ClientID
+	d.ClientSecret = raw.ClientSecret
+
+	return nil
 }
 
 // UnmarshalJSON implements custom unmarshaling for InferenceSpec.
