@@ -3,8 +3,8 @@
 // OAC encodes agent metadata as OCI image labels under the org.openagentcontainers.*
 // namespace. [Parse] strips the prefix, converts dotted label suffixes into a JSON object
 // tree, and decodes the result into a versioned [Manifest]. After a successful parse,
-// exactly one of [Manifest.V1Alpha1] or [Manifest.V1Alpha2] is non-nil, selected by the
-// version label.
+// exactly one of [Manifest.V1Alpha1], [Manifest.V1Alpha2], or [Manifest.V1Alpha3] is
+// non-nil, selected by the version label.
 //
 //	m, err := oac.Parse(labels)
 //	if err != nil { ... }
@@ -27,15 +27,17 @@ const LabelDescription = "org.openagentcontainers.description"
 // SpecVersion is the type for OAC spec version identifiers.
 type SpecVersion string
 
-// VersionV1Alpha1 and VersionV1Alpha2 are the recognised [SpecVersion] values for
-// [LabelVersion], selecting which versioned spec [Parse] decodes the remaining labels into.
+// VersionV1Alpha1, VersionV1Alpha2, and VersionV1Alpha3 are the recognised [SpecVersion]
+// values for [LabelVersion], selecting which versioned spec [Parse] decodes the remaining
+// labels into.
 const (
 	VersionV1Alpha1 SpecVersion = "v1alpha1"
 	VersionV1Alpha2 SpecVersion = "v1alpha2"
+	VersionV1Alpha3 SpecVersion = "v1alpha3"
 )
 
 // Manifest is the parsed representation of an OAC image's labels.
-// After a successful Parse call, exactly one of V1Alpha1 or V1Alpha2 will be
+// After a successful Parse call, exactly one of V1Alpha1, V1Alpha2, or V1Alpha3 will be
 // non-nil, determined by the version label. Check SpecVersion or test each field for nil.
 // Call [Manifest.Name] and [Manifest.Description] to read those fields without switching
 // on SpecVersion yourself.
@@ -47,6 +49,9 @@ type Manifest struct {
 
 	// V1Alpha2 is non-nil when SpecVersion is [VersionV1Alpha2]. Nil otherwise.
 	V1Alpha2 *V1Alpha2Spec `json:"v1alpha2,omitempty"`
+
+	// V1Alpha3 is non-nil when SpecVersion is [VersionV1Alpha3]. Nil otherwise.
+	V1Alpha3 *V1Alpha3Spec `json:"v1alpha3,omitempty"`
 }
 
 // Name returns the agent name from whichever versioned spec is populated, or "" if none.
@@ -56,6 +61,8 @@ func (m *Manifest) Name() string {
 		return m.V1Alpha1.Name
 	case m.V1Alpha2 != nil:
 		return m.V1Alpha2.Name
+	case m.V1Alpha3 != nil:
+		return m.V1Alpha3.Name
 	default:
 		return ""
 	}
@@ -68,6 +75,8 @@ func (m *Manifest) Description() string {
 		return m.V1Alpha1.Description
 	case m.V1Alpha2 != nil:
 		return m.V1Alpha2.Description
+	case m.V1Alpha3 != nil:
+		return m.V1Alpha3.Description
 	default:
 		return ""
 	}
@@ -99,6 +108,20 @@ type V1Alpha2Spec struct {
 	Session SessionSpec `json:"session"`
 }
 
+// V1Alpha3Spec is the spec for OAC images declaring [VersionV1Alpha3].
+// It replaces the inference type model-ID list with structured capability and
+// performance requirements; all other label groups are unchanged from v1alpha2.
+type V1Alpha3Spec struct {
+	Name         string                   `json:"name"`
+	Description  string                   `json:"description,omitempty"`
+	Inference    *InferenceV3Spec         `json:"inference,omitempty"`
+	MCP          map[string]MCPSpec       `json:"mcp,omitempty"`
+	Workspaces   map[string]WorkspaceSpec `json:"workspace,omitempty"`
+	Orchestrator *OrchestratorSpec        `json:"orchestrator,omitempty"`
+	Events       map[string]EventSpec     `json:"events,omitempty"`
+	Session      SessionSpec              `json:"session"`
+}
+
 // SessionSpec describes per-session runtime isolation settings.
 type SessionSpec struct {
 	// Isolation, when true, requests that the orchestrator provision a fresh ephemeral
@@ -117,7 +140,7 @@ type CredentialTarget struct {
 	File string `json:"file,omitempty"`
 }
 
-// InferenceSpec describes the agent's inference configuration.
+// InferenceSpec describes the agent's inference configuration for v1alpha1/v1alpha2 images.
 // Types is populated by a custom UnmarshalJSON and holds per-type model lists.
 type InferenceSpec struct {
 	APIBase *CredentialTarget            `json:"api_base,omitempty"`
@@ -125,11 +148,60 @@ type InferenceSpec struct {
 	Types   map[string]InferenceTypeSpec `json:"-"` // populated by UnmarshalJSON
 }
 
-// InferenceTypeSpec holds the model list for a single inference type.
+// InferenceTypeSpec holds the model list for a single inference type in v1alpha1/v1alpha2 images.
 type InferenceTypeSpec struct {
 	// Models is a pre-split list of model identifiers accepted by this inference type.
 	// Populated by UnmarshalJSON; the label value is space-separated, e.g. "gpt-4o llama-3.1-8b-instruct".
 	Models []string `json:"models"` // populated by UnmarshalJSON
+}
+
+// InferenceV3Spec describes the agent's inference configuration for v1alpha3 images.
+// Types holds per-type capability requirements; model selection is delegated to the orchestrator.
+type InferenceV3Spec struct {
+	APIBase *CredentialTarget               `json:"api_base,omitempty"`
+	APIKey  *CredentialTarget               `json:"api_key,omitempty"`
+	Types   map[string]InferenceTypeReqSpec `json:"-"` // populated by UnmarshalJSON
+}
+
+// InferenceTypeReqSpec holds capability and performance requirements for a single inference
+// type in v1alpha3 images. The orchestrator selects from its available models the best fit
+// satisfying all declared requirements.
+type InferenceTypeReqSpec struct {
+	// Context is the minimum context window in tokens. Zero means no constraint.
+	// Populated by UnmarshalJSON; the label value is a positive integer string, e.g. "128000".
+	Context int `json:"context,omitempty"`
+	// Reasoning requires extended reasoning/thinking mode support when true.
+	Reasoning bool `json:"reasoning,omitempty"`
+	// Tools requires function/tool calling support when true.
+	Tools bool `json:"tools,omitempty"`
+	// Input declares required input modality capabilities.
+	Input *InferenceTypeInputSpec `json:"input,omitempty"`
+	// Output declares required output modality capabilities.
+	Output *InferenceTypeOutputSpec `json:"output,omitempty"`
+	// Bench declares minimum benchmark scores using an open vocabulary.
+	// Keys are benchmark identifiers as defined by their publishers (e.g. "gpqa", "humaneval").
+	// Values are decimal strings in [0, 100] representing percentage correct.
+	Bench map[string]string `json:"bench,omitempty"`
+}
+
+// InferenceTypeInputSpec declares required input modality capabilities.
+type InferenceTypeInputSpec struct {
+	// Vision requires image input support when true.
+	Vision bool `json:"vision,omitempty"`
+	// Audio requires audio input support when true.
+	Audio bool `json:"audio,omitempty"`
+	// Video requires video input support when true.
+	Video bool `json:"video,omitempty"`
+}
+
+// InferenceTypeOutputSpec declares required output modality capabilities.
+type InferenceTypeOutputSpec struct {
+	// Image requires image generation output support when true.
+	Image bool `json:"image,omitempty"`
+	// Audio requires audio/speech output support when true.
+	Audio bool `json:"audio,omitempty"`
+	// Video requires video generation output support when true.
+	Video bool `json:"video,omitempty"`
 }
 
 // MCPSpec describes an MCP server's authentication configuration.

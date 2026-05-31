@@ -353,3 +353,143 @@ func TestParse_InferenceAPIKeyAsScalar(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "inference.api_key")
 }
+
+// --- V1Alpha3 ---
+
+func TestParse_V1Alpha3_MinimalValid(t *testing.T) {
+	t.Parallel()
+
+	labels := map[string]string{
+		"org.openagentcontainers.version": "v1alpha3",
+		"org.openagentcontainers.name":    "my-agent",
+	}
+
+	m, err := oac.Parse(labels)
+	require.NoError(t, err)
+	require.NotNil(t, m.V1Alpha3)
+	assert.Nil(t, m.V1Alpha1)
+	assert.Nil(t, m.V1Alpha2)
+	assert.Equal(t, oac.VersionV1Alpha3, m.SpecVersion)
+	assert.Equal(t, "my-agent", m.V1Alpha3.Name)
+}
+
+func TestParse_V1Alpha3_InferenceCapabilities(t *testing.T) {
+	t.Parallel()
+
+	labels := map[string]string{
+		"org.openagentcontainers.version":                                 "v1alpha3",
+		"org.openagentcontainers.name":                                    "agent",
+		"org.openagentcontainers.inference.api_base.env":                  "OPENAI_BASE_URL",
+		"org.openagentcontainers.inference.api_key.env":                   "OPENAI_API_KEY",
+		"org.openagentcontainers.inference.chat-completions.tools":        "true",
+		"org.openagentcontainers.inference.chat-completions.context":      "128000",
+		"org.openagentcontainers.inference.chat-completions.reasoning":    "true",
+		"org.openagentcontainers.inference.chat-completions.input.vision": "true",
+		"org.openagentcontainers.inference.chat-completions.output.image": "true",
+		"org.openagentcontainers.inference.chat-completions.bench.gpqa":   "75.5",
+		"org.openagentcontainers.inference.embeddings.context":            "8191",
+	}
+
+	m, err := oac.Parse(labels)
+	require.NoError(t, err)
+	require.NotNil(t, m.V1Alpha3)
+
+	inf := m.V1Alpha3.Inference
+	require.NotNil(t, inf)
+	require.NotNil(t, inf.APIBase)
+	assert.Equal(t, "OPENAI_BASE_URL", inf.APIBase.Env)
+	require.NotNil(t, inf.APIKey)
+	assert.Equal(t, "OPENAI_API_KEY", inf.APIKey.Env)
+
+	require.Contains(t, inf.Types, "chat-completions")
+	ct := inf.Types["chat-completions"]
+	assert.True(t, ct.Tools)
+	assert.Equal(t, 128000, ct.Context)
+	assert.True(t, ct.Reasoning)
+	require.NotNil(t, ct.Input)
+	assert.True(t, ct.Input.Vision)
+	require.NotNil(t, ct.Output)
+	assert.True(t, ct.Output.Image)
+	assert.Equal(t, "75.5", ct.Bench["gpqa"])
+
+	require.Contains(t, inf.Types, "embeddings")
+	assert.Equal(t, 8191, inf.Types["embeddings"].Context)
+}
+
+func TestParse_V1Alpha3_ContextNonInteger(t *testing.T) {
+	t.Parallel()
+
+	labels := map[string]string{
+		"org.openagentcontainers.version":                            "v1alpha3",
+		"org.openagentcontainers.name":                               "agent",
+		"org.openagentcontainers.inference.chat-completions.context": "not-a-number",
+	}
+
+	_, err := oac.Parse(labels)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "context")
+}
+
+func TestParse_V1Alpha3_ContextNonPositive(t *testing.T) {
+	t.Parallel()
+
+	for _, val := range []string{"0", "-1"} {
+		t.Run(val, func(t *testing.T) {
+			t.Parallel()
+
+			labels := map[string]string{
+				"org.openagentcontainers.version":                            "v1alpha3",
+				"org.openagentcontainers.name":                               "agent",
+				"org.openagentcontainers.inference.chat-completions.context": val,
+			}
+
+			_, err := oac.Parse(labels)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "context")
+		})
+	}
+}
+
+func TestParse_V1Alpha3_InferenceUnknownSubField(t *testing.T) {
+	t.Parallel()
+
+	labels := map[string]string{
+		"org.openagentcontainers.version":                            "v1alpha3",
+		"org.openagentcontainers.name":                               "agent",
+		"org.openagentcontainers.inference.chat-completions.unknown": "x",
+	}
+
+	_, err := oac.Parse(labels)
+	require.Error(t, err)
+}
+
+func TestParse_V1Alpha3_SessionIsolation(t *testing.T) {
+	t.Parallel()
+
+	labels := map[string]string{
+		"org.openagentcontainers.version":           "v1alpha3",
+		"org.openagentcontainers.name":              "agent",
+		"org.openagentcontainers.session.isolation": "true",
+	}
+
+	m, err := oac.Parse(labels)
+	require.NoError(t, err)
+	require.NotNil(t, m.V1Alpha3)
+	assert.True(t, m.V1Alpha3.Session.Isolation)
+}
+
+func TestParse_V1Alpha3_NameAndDescription(t *testing.T) {
+	t.Parallel()
+
+	labels := map[string]string{
+		"org.openagentcontainers.version":     "v1alpha3",
+		"org.openagentcontainers.name":        "my-agent",
+		"org.openagentcontainers.description": "Does things",
+	}
+
+	m, err := oac.Parse(labels)
+	require.NoError(t, err)
+	require.NotNil(t, m.V1Alpha3)
+	assert.Equal(t, "my-agent", m.Name())
+	assert.Equal(t, "Does things", m.Description())
+}

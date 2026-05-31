@@ -8,18 +8,21 @@
 //   - name: errors when name is not set
 //   - description: warns when no description is set
 //   - inference: warns when api_base/api_key are not declared together;
-//     warns when credential env/file sources are empty
+//     warns when credential env/file sources are empty;
+//     warns when no inference types are declared alongside connection labels
 //   - mcp.<name>: warns when no auth method is configured; errors when
 //     bearer/oauth/dcr credential sources are empty; warns when DCR scopes are absent
 //   - orchestrator: errors when orchestrator is nil, env is missing, or auth is missing;
 //     errors when credential sources are empty (orchestrator.mtls.ca is optional)
-//   - session.isolation: errors when combined with workspaces (v1alpha2 only)
+//   - session.isolation: errors when combined with workspaces (v1alpha2 and v1alpha3)
 //   - workspace.<name>: warns when path is empty
 //   - events.<name>: warns when schema path or mimetype is empty
 package check
 
 import (
+	"fmt"
 	"slices"
+	"strconv"
 
 	"github.com/restrukt-ai/openagentcontainers/pkg/oac"
 )
@@ -55,7 +58,7 @@ type Issue struct {
 
 // Check runs all validation and advisory checks against an already-parsed manifest.
 // Call Check after Parse. Returns nil when no issues are found.
-// m must not be nil. If m has no populated spec (both V1Alpha1 and V1Alpha2 are nil),
+// m must not be nil. If m has no populated spec (V1Alpha1, V1Alpha2, and V1Alpha3 are all nil),
 // Check returns nil without panicking. See the package documentation for the full list
 // of checks and their severities.
 func Check(m *oac.Manifest) []Issue {
@@ -75,6 +78,8 @@ func Check(m *oac.Manifest) []Issue {
 				Message:  "session.isolation cannot be combined with workspaces",
 			})
 		}
+	case m.V1Alpha3 != nil:
+		return checkV1Alpha3(m.V1Alpha3)
 	default:
 		return nil
 	}
@@ -82,6 +87,124 @@ func Check(m *oac.Manifest) []Issue {
 	checkSpec(spec, &issues)
 
 	return issues
+}
+
+func checkV1Alpha3(s *oac.V1Alpha3Spec) []Issue {
+	var issues []Issue
+
+	if s.Session.Isolation && len(s.Workspaces) > 0 {
+		issues = append(issues, Issue{
+			Severity: SeverityError,
+			Field:    "session.isolation",
+			Message:  "session.isolation cannot be combined with workspaces",
+		})
+	}
+
+	checkName(s.Name, &issues)
+	checkDescription(s.Description, &issues)
+	checkInferenceV3(s.Inference, &issues)
+	checkMCPs(s.MCP, &issues)
+	checkOrchestrator(s.Orchestrator, &issues)
+	checkWorkspaces(s.Workspaces, &issues)
+	checkEvents(s.Events, &issues)
+
+	return issues
+}
+
+func checkInferenceV3(inf *oac.InferenceV3Spec, issues *[]Issue) {
+	if inf == nil {
+		return
+	}
+
+	checkInferenceV3APIKeyPair(inf, issues)
+	checkInferenceV3EnvFiles(inf, issues)
+
+	if len(inf.Types) == 0 && (inf.APIBase != nil || inf.APIKey != nil) {
+		*issues = append(*issues, Issue{
+			Severity: SeverityWarning,
+			Field:    "inference",
+			Message:  "no inference types declared",
+		})
+	}
+
+	checkInferenceV3Types(inf.Types, issues)
+}
+
+func checkInferenceV3Types(types map[string]oac.InferenceTypeReqSpec, issues *[]Issue) {
+	typeKeys := make([]string, 0, len(types))
+	for k := range types {
+		typeKeys = append(typeKeys, k)
+	}
+
+	slices.Sort(typeKeys)
+
+	for _, typeName := range typeKeys {
+		checkInferenceV3BenchScores(typeName, types[typeName].Bench, issues)
+	}
+}
+
+func checkInferenceV3BenchScores(typeName string, bench map[string]string, issues *[]Issue) {
+	benchKeys := make([]string, 0, len(bench))
+	for k := range bench {
+		benchKeys = append(benchKeys, k)
+	}
+
+	slices.Sort(benchKeys)
+
+	for _, benchID := range benchKeys {
+		checkBenchScore("inference."+typeName+".bench."+benchID, bench[benchID], issues)
+	}
+}
+
+func checkBenchScore(field, val string, issues *[]Issue) {
+	v, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		*issues = append(*issues, Issue{
+			Severity: SeverityError,
+			Field:    field,
+			Message:  fmt.Sprintf("bench value must be a decimal number in [0, 100], got %q", val),
+		})
+
+		return
+	}
+
+	if v < 0 || v > 100 {
+		*issues = append(*issues, Issue{
+			Severity: SeverityError,
+			Field:    field,
+			Message:  fmt.Sprintf("bench value must be in [0, 100], got %g", v),
+		})
+	}
+}
+
+// checkInferenceV3APIKeyPair warns when api_base and api_key are not set together.
+func checkInferenceV3APIKeyPair(inf *oac.InferenceV3Spec, issues *[]Issue) {
+	if inf.APIBase != nil && inf.APIKey == nil {
+		*issues = append(*issues, Issue{
+			Severity: SeverityWarning,
+			Field:    "inference.api_key",
+			Message:  "api_key is required when api_base is set",
+		})
+	}
+
+	if inf.APIKey != nil && inf.APIBase == nil {
+		*issues = append(*issues, Issue{
+			Severity: SeverityWarning,
+			Field:    "inference.api_base",
+			Message:  "api_base is required when api_key is set",
+		})
+	}
+}
+
+// checkInferenceV3EnvFiles validates credential sources for api_base and api_key.
+func checkInferenceV3EnvFiles(inf *oac.InferenceV3Spec, issues *[]Issue) {
+	if inf.APIBase != nil {
+		checkEnvFile("inference.api_base", *inf.APIBase, issues)
+	}
+
+	if inf.APIKey != nil {
+		checkEnvFile("inference.api_key", *inf.APIKey, issues)
+	}
 }
 
 func checkSpec(spec *oac.V1Alpha1Spec, issues *[]Issue) {

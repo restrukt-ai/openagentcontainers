@@ -516,6 +516,117 @@ func TestLint_NoSpecReturnsNil(t *testing.T) {
 	assert.Nil(t, issues)
 }
 
+// --- V1Alpha3 ---
+
+func TestLint_V1Alpha3_Clean(t *testing.T) {
+	t.Parallel()
+
+	labels := map[string]string{
+		"org.openagentcontainers.version":                               "v1alpha3",
+		"org.openagentcontainers.name":                                  "my-agent",
+		"org.openagentcontainers.description":                           "Does things",
+		"org.openagentcontainers.orchestrator.env":                      "ORCHESTRATOR_ADDR",
+		"org.openagentcontainers.orchestrator.bearer.token.env":         "ORCHESTRATOR_TOKEN",
+		"org.openagentcontainers.inference.api_base.env":                "OPENAI_BASE_URL",
+		"org.openagentcontainers.inference.api_key.env":                 "OPENAI_API_KEY",
+		"org.openagentcontainers.inference.chat-completions.tools":      "true",
+		"org.openagentcontainers.inference.chat-completions.context":    "128000",
+		"org.openagentcontainers.inference.chat-completions.bench.gpqa": "55",
+	}
+
+	issues := check.Check(mustParse(t, labels))
+	assert.Empty(t, issues)
+}
+
+func TestLint_V1Alpha3Dispatch(t *testing.T) {
+	t.Parallel()
+
+	labels := map[string]string{
+		"org.openagentcontainers.version":     "v1alpha3",
+		"org.openagentcontainers.name":        "my-agent",
+		"org.openagentcontainers.description": "Does things",
+	}
+
+	m := mustParse(t, labels)
+	require.NotNil(t, m.V1Alpha3)
+
+	issues := check.Check(m)
+
+	// description is set, name is set — only orchestrator required warning expected
+	iss := findIssue(issues, "orchestrator")
+	require.NotNil(t, iss)
+	assert.Equal(t, check.SeverityError, iss.Severity)
+}
+
+func TestLint_V1Alpha3_NameEmpty(t *testing.T) {
+	t.Parallel()
+
+	m := &oac.Manifest{
+		SpecVersion: oac.VersionV1Alpha3,
+		V1Alpha3:    &oac.V1Alpha3Spec{},
+	}
+
+	issues := check.Check(m)
+
+	iss := findIssue(issues, "name")
+	require.NotNil(t, iss)
+	assert.Equal(t, check.SeverityError, iss.Severity)
+}
+
+func TestLint_V1Alpha3_InferenceNoTypes(t *testing.T) {
+	t.Parallel()
+
+	labels := map[string]string{
+		"org.openagentcontainers.version":                "v1alpha3",
+		"org.openagentcontainers.name":                   "agent",
+		"org.openagentcontainers.inference.api_base.env": "OPENAI_BASE_URL",
+		"org.openagentcontainers.inference.api_key.env":  "OPENAI_API_KEY",
+	}
+
+	issues := check.Check(mustParse(t, labels))
+
+	iss := findIssue(issues, "inference")
+	require.NotNil(t, iss)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
+}
+
+func TestLint_V1Alpha3_InferenceAPIBaseWithoutAPIKey(t *testing.T) {
+	t.Parallel()
+
+	labels := map[string]string{
+		"org.openagentcontainers.version":                "v1alpha3",
+		"org.openagentcontainers.name":                   "agent",
+		"org.openagentcontainers.inference.api_base.env": "OPENAI_BASE_URL",
+	}
+
+	issues := check.Check(mustParse(t, labels))
+
+	iss := findIssue(issues, "inference.api_key")
+	require.NotNil(t, iss)
+	assert.Equal(t, check.SeverityWarning, iss.Severity)
+}
+
+func TestCheck_V1Alpha3_SessionIsolationWithWorkspace(t *testing.T) {
+	t.Parallel()
+
+	m := &oac.Manifest{
+		SpecVersion: oac.VersionV1Alpha3,
+		V1Alpha3: &oac.V1Alpha3Spec{
+			Name: "agent",
+			Workspaces: map[string]oac.WorkspaceSpec{
+				"code": {Path: "/workspace"},
+			},
+			Session: oac.SessionSpec{Isolation: true},
+		},
+	}
+
+	issues := check.Check(m)
+
+	iss := findIssue(issues, "session.isolation")
+	require.NotNil(t, iss)
+	assert.Equal(t, check.SeverityError, iss.Severity)
+}
+
 func TestCheck_NameEmpty(t *testing.T) {
 	t.Parallel()
 
@@ -569,6 +680,60 @@ func TestCheck_SessionIsolation(t *testing.T) {
 	iss := findIssue(issues, "session.isolation")
 	require.NotNil(t, iss)
 	assert.Equal(t, check.SeverityError, iss.Severity)
+}
+
+func TestLint_V1Alpha3_BenchInvalid(t *testing.T) {
+	t.Parallel()
+
+	m := &oac.Manifest{
+		SpecVersion: oac.VersionV1Alpha3,
+		V1Alpha3: &oac.V1Alpha3Spec{
+			Name: "agent",
+			Inference: &oac.InferenceV3Spec{
+				Types: map[string]oac.InferenceTypeReqSpec{
+					"chat-completions": {
+						Bench: map[string]string{"gpqa": "not-a-number"},
+					},
+				},
+			},
+		},
+	}
+
+	issues := check.Check(m)
+
+	iss := findIssue(issues, "inference.chat-completions.bench.gpqa")
+	require.NotNil(t, iss)
+	assert.Equal(t, check.SeverityError, iss.Severity)
+}
+
+func TestLint_V1Alpha3_BenchOutOfRange(t *testing.T) {
+	t.Parallel()
+
+	for _, val := range []string{"150", "-5"} {
+		t.Run(val, func(t *testing.T) {
+			t.Parallel()
+
+			m := &oac.Manifest{
+				SpecVersion: oac.VersionV1Alpha3,
+				V1Alpha3: &oac.V1Alpha3Spec{
+					Name: "agent",
+					Inference: &oac.InferenceV3Spec{
+						Types: map[string]oac.InferenceTypeReqSpec{
+							"chat-completions": {
+								Bench: map[string]string{"gpqa": val},
+							},
+						},
+					},
+				},
+			}
+
+			issues := check.Check(m)
+
+			iss := findIssue(issues, "inference.chat-completions.bench.gpqa")
+			require.NotNil(t, iss)
+			assert.Equal(t, check.SeverityError, iss.Severity)
+		})
+	}
 }
 
 func TestLint_EnvFile_TableDriven(t *testing.T) {

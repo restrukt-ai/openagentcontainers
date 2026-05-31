@@ -59,6 +59,62 @@ func ExampleV1Alpha1Spec() {
 	// does things
 }
 
+func ExampleV1Alpha3Spec() {
+	labels := map[string]string{
+		"org.openagentcontainers.version":                            "v1alpha3",
+		"org.openagentcontainers.name":                               "my-agent",
+		"org.openagentcontainers.orchestrator.env":                   "ORCHESTRATOR_ADDR",
+		"org.openagentcontainers.orchestrator.bearer.token.env":      "ORCHESTRATOR_TOKEN",
+		"org.openagentcontainers.inference.api_base.env":             "OPENAI_BASE_URL",
+		"org.openagentcontainers.inference.api_key.env":              "OPENAI_API_KEY",
+		"org.openagentcontainers.inference.chat-completions.tools":   "true",
+		"org.openagentcontainers.inference.chat-completions.context": "128000",
+	}
+
+	m, err := oac.Parse(labels)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	inf := m.V1Alpha3.Inference
+	fmt.Println(m.V1Alpha3.Name)
+	fmt.Println(inf.Types["chat-completions"].Tools)
+	fmt.Println(inf.Types["chat-completions"].Context)
+	// Output:
+	// my-agent
+	// true
+	// 128000
+}
+
+func ExampleInferenceV3Spec() {
+	labels := map[string]string{
+		"org.openagentcontainers.version":                                 "v1alpha3",
+		"org.openagentcontainers.name":                                    "my-agent",
+		"org.openagentcontainers.inference.api_base.env":                  "OPENAI_BASE_URL",
+		"org.openagentcontainers.inference.api_key.env":                   "OPENAI_API_KEY",
+		"org.openagentcontainers.inference.chat-completions.tools":        "true",
+		"org.openagentcontainers.inference.chat-completions.reasoning":    "true",
+		"org.openagentcontainers.inference.chat-completions.input.vision": "true",
+		"org.openagentcontainers.inference.chat-completions.bench.gpqa":   "75",
+	}
+
+	m, err := oac.Parse(labels)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ct := m.V1Alpha3.Inference.Types["chat-completions"]
+	fmt.Println(ct.Tools)
+	fmt.Println(ct.Reasoning)
+	fmt.Println(ct.Input.Vision)
+	fmt.Println(ct.Bench["gpqa"])
+	// Output:
+	// true
+	// true
+	// true
+	// 75
+}
+
 func ExampleV1Alpha2Spec() {
 	labels := map[string]string{
 		"org.openagentcontainers.version":                       "v1alpha2",

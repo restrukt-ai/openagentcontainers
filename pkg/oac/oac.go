@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -12,11 +13,15 @@ import (
 // the version label is absent or not one of the known [SpecVersion] values.
 var ErrUnsupportedVersion = errors.New("unsupported spec version")
 
+// ErrInvalidContextValue is returned by [InferenceTypeReqSpec.UnmarshalJSON] when the
+// "context" label is present but is not a valid positive integer.
+var ErrInvalidContextValue = errors.New("context: must be a positive integer")
+
 // ParseSpecVersion parses s as a known OAC spec version.
 // Returns [ErrUnsupportedVersion] when s is absent or unrecognised.
 func ParseSpecVersion(s string) (SpecVersion, error) {
 	switch SpecVersion(s) {
-	case VersionV1Alpha1, VersionV1Alpha2:
+	case VersionV1Alpha1, VersionV1Alpha2, VersionV1Alpha3:
 		return SpecVersion(s), nil
 	default:
 		return "", fmt.Errorf("%w %q", ErrUnsupportedVersion, s)
@@ -41,6 +46,8 @@ func Parse(labels map[string]string) (*Manifest, error) {
 		m.V1Alpha1, err = parseV1Alpha1(labels)
 	case VersionV1Alpha2:
 		m.V1Alpha2, err = parseV1Alpha2(labels)
+	case VersionV1Alpha3:
+		m.V1Alpha3, err = parseV1Alpha3(labels)
 	default:
 		// unreachable: ParseSpecVersion already validated sv
 	}
@@ -90,6 +97,25 @@ func parseV1Alpha2(labels map[string]string) (*V1Alpha2Spec, error) {
 	return &spec, nil
 }
 
+func parseV1Alpha3(labels map[string]string) (*V1Alpha3Spec, error) {
+	data, err := json.Marshal(labelsToTree(labels))
+	if err != nil {
+		return nil, err
+	}
+
+	var spec V1Alpha3Spec
+
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+
+	err = dec.Decode(&spec)
+	if err != nil {
+		return nil, err
+	}
+
+	return &spec, nil
+}
+
 // decodeStrict decodes v into dst using a strict decoder that rejects unknown fields.
 func decodeStrict(v json.RawMessage, dst any) error {
 	dec := json.NewDecoder(bytes.NewReader(v))
@@ -119,6 +145,31 @@ func decodeEnvFileField(raw map[string]json.RawMessage, key string, dst **Creden
 	delete(raw, key)
 
 	return nil
+}
+
+// inferenceTypeReqsFromRaw decodes every remaining entry in raw as an
+// InferenceTypeReqSpec and returns the resulting map.
+func inferenceTypeReqsFromRaw(
+	raw map[string]json.RawMessage,
+) (map[string]InferenceTypeReqSpec, error) {
+	var types map[string]InferenceTypeReqSpec
+
+	for k, v := range raw {
+		var ts InferenceTypeReqSpec
+
+		err := decodeStrict(v, &ts)
+		if err != nil {
+			return nil, fmt.Errorf("inference.%s: %w", k, err)
+		}
+
+		if types == nil {
+			types = make(map[string]InferenceTypeReqSpec, len(raw))
+		}
+
+		types[k] = ts
+	}
+
+	return types, nil
 }
 
 // inferenceTypesFromRaw decodes every remaining entry in raw as an
@@ -184,6 +235,80 @@ func (d *MCPDCRAuth) UnmarshalJSON(data []byte) error {
 	d.Scopes = strings.Fields(raw.Scopes)
 	d.ClientID = raw.ClientID
 	d.ClientSecret = raw.ClientSecret
+
+	return nil
+}
+
+// UnmarshalJSON implements custom unmarshaling for InferenceTypeReqSpec.
+// It reads "context" as a positive-integer string and converts it to int.
+// A missing "context" label leaves Context at zero, meaning no constraint.
+// Returns an error if "context" is present but not a valid positive integer.
+func (s *InferenceTypeReqSpec) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Context   string                   `json:"context,omitempty"`
+		Reasoning bool                     `json:"reasoning,omitempty"`
+		Tools     bool                     `json:"tools,omitempty"`
+		Input     *InferenceTypeInputSpec  `json:"input,omitempty"`
+		Output    *InferenceTypeOutputSpec `json:"output,omitempty"`
+		Bench     map[string]string        `json:"bench,omitempty"`
+	}
+
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+
+	err := dec.Decode(&raw)
+	if err != nil {
+		return err
+	}
+
+	if raw.Context != "" {
+		v, err := strconv.Atoi(raw.Context)
+		if err != nil {
+			return fmt.Errorf("%w, got %q", ErrInvalidContextValue, raw.Context)
+		}
+
+		if v <= 0 {
+			return fmt.Errorf("%w, got %d", ErrInvalidContextValue, v)
+		}
+
+		s.Context = v
+	}
+
+	s.Reasoning = raw.Reasoning
+	s.Tools = raw.Tools
+	s.Input = raw.Input
+	s.Output = raw.Output
+	s.Bench = raw.Bench
+
+	return nil
+}
+
+// UnmarshalJSON implements custom unmarshaling for InferenceV3Spec.
+// Known keys "api_base" and "api_key" are decoded as *CredentialTarget fields.
+// All remaining keys are treated as inference type names and decoded as
+// InferenceTypeReqSpec values.
+func (s *InferenceV3Spec) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+
+	err := json.Unmarshal(data, &raw)
+	if err != nil {
+		return err
+	}
+
+	err = decodeEnvFileField(raw, "api_base", &s.APIBase)
+	if err != nil {
+		return fmt.Errorf("inference.api_base: %w", err)
+	}
+
+	err = decodeEnvFileField(raw, "api_key", &s.APIKey)
+	if err != nil {
+		return fmt.Errorf("inference.api_key: %w", err)
+	}
+
+	s.Types, err = inferenceTypeReqsFromRaw(raw)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
