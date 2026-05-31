@@ -36,10 +36,6 @@ The gateway must expose an OpenAI-compatible API (`POST /v1/chat/completions`, e
 
 **Per-type model requirements:**
 
-```dockerfile
-LABEL org.openagentcontainers.inference.<type>.models="<model-id> [<model-id> ...]"
-```
-
 `<type>` is derived from the OpenAI API endpoint path: strip `/v1/` and replace `/` with `-`.
 
 | Type key | OpenAI endpoint |
@@ -51,17 +47,32 @@ LABEL org.openagentcontainers.inference.<type>.models="<model-id> [<model-id> ..
 | `audio-transcriptions` | `POST /v1/audio/transcriptions` |
 | `moderations` | `POST /v1/moderations` |
 
-`models` is a space-separated list of model identifiers. **All listed models must be available**
-on the configured gateway — the orchestrator validates each at deploy time and fails deployment if
-any are missing. Undeclared types receive no validation and the harness must not use them.
+Rather than declaring specific model IDs, the agent declares capability and performance requirements for each type. The orchestrator selects from its available models the best fit that satisfies all declared requirements. Undeclared types receive no validation and the harness must not use them.
+
+| Label | Value | Description |
+|---|---|---|
+| `inference.<type>.context` | positive integer | Minimum context window in tokens |
+| `inference.<type>.reasoning` | `"true"` or `"false"` | Model must support extended reasoning/thinking mode |
+| `inference.<type>.tools` | `"true"` or `"false"` | Model must support function/tool calling |
+| `inference.<type>.input.vision` | `"true"` or `"false"` | Model must accept image inputs |
+| `inference.<type>.input.audio` | `"true"` or `"false"` | Model must accept audio inputs |
+| `inference.<type>.input.video` | `"true"` or `"false"` | Model must accept video inputs |
+| `inference.<type>.output.image` | `"true"` or `"false"` | Model must support image generation output |
+| `inference.<type>.output.audio` | `"true"` or `"false"` | Model must support audio/speech output |
+| `inference.<type>.output.video` | `"true"` or `"false"` | Model must support video generation output |
+| `inference.<type>.bench.<id>` | decimal [0, 100] | Minimum score on the named benchmark, normalized to percentage |
+
+All labels are optional; absent labels impose no constraint on model selection. Boolean capability labels accept `"true"` or `"false"`; an absent label and `"false"` are semantically equivalent. The `bench.<id>` sub-namespace uses an open vocabulary — `<id>` is the benchmark identifier as defined by its publisher (e.g. `gpqa`, `humaneval`). Benchmark values must be a decimal number in [0, 100] representing percentage correct; the agent author is responsible for normalizing scores to this range.
 
 **Example:**
 
 ```dockerfile
 LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
 LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
-LABEL org.openagentcontainers.inference.chat-completions.models="gpt-4o llama-3.1-8b-instruct"
-LABEL org.openagentcontainers.inference.embeddings.models="text-embedding-3-small"
+LABEL org.openagentcontainers.inference.chat-completions.context="128000"
+LABEL org.openagentcontainers.inference.chat-completions.input.vision="true"
+LABEL org.openagentcontainers.inference.chat-completions.bench.gpqa="55"
+LABEL org.openagentcontainers.inference.embeddings.context="8191"
 ```
 
 ---

@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InsuranceClaim",
+  "description": "An inbound insurance claim event delivered to the claims triage agent.",
+  "type": "object",
+  "required": ["claim_id", "policy_number", "claimant_id", "incident_type", "claimed_amount", "created_at"],
+  "additionalProperties": false,
+  "properties": {
+    "claim_id": {
+      "type": "string",
+      "description": "Unique identifier for this claim."
+    },
+    "policy_number": {
+      "type": "string",
+      "description": "The insured's policy number."
+    },
+    "claimant_id": {
+      "type": "string",
+      "description": "Identifier of the claimant in the CRM."
+    },
+    "incident_type": {
+      "type": "string",
+      "enum": ["auto-collision", "auto-theft", "property-damage", "liability", "medical", "other"],
+      "description": "Category of the reported incident."
+    },
+    "incident_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the incident occurred (YYYY-MM-DD)."
+    },
+    "claimed_amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Dollar amount claimed by the insured."
+    },
+    "description": {
+      "type": "string",
+      "description": "Claimant's written description of the incident."
+    },
+    "recorded_call_url": {
+      "type": "string",
+      "description": "Presigned URL to the recorded intake call audio file, if available."
+    },
+    "attachments": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Presigned URLs to supporting documents or photos."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the claim was filed."
+    }
+  }
+}

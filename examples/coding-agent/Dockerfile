@@ -24,7 +24,7 @@ FROM alpine:3.21
 RUN apk add --no-cache ca-certificates git grep
 
 # --- Identity ---
-LABEL org.openagentcontainers.version="v1alpha2"
+LABEL org.openagentcontainers.version="v1alpha3"
 LABEL org.openagentcontainers.name="coding-agent"
 LABEL org.openagentcontainers.description="Handles code tasks (PR reviews, bug fixes, feature implementations) with per-session workspace isolation"
 
@@ -37,8 +37,9 @@ LABEL org.openagentcontainers.orchestrator.mtls.ca.file="/run/secrets/ca.crt"
 # --- Inference ---
 LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
 LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
-LABEL org.openagentcontainers.inference.chat-completions.models="gemini-2.5-flash"
-LABEL org.openagentcontainers.inference.embeddings.models="text-embedding-004"
+LABEL org.openagentcontainers.inference.chat-completions.tools="true"
+LABEL org.openagentcontainers.inference.chat-completions.context="1000000"
+LABEL org.openagentcontainers.inference.embeddings.context="2048"
 
 # --- MCP: GitHub (DCR) ---
 LABEL org.openagentcontainers.mcp.github.dcr.scopes="repo:read repo:write pull-request:read pull-request:write checks:read checks:write"

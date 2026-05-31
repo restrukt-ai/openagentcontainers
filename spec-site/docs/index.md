@@ -46,7 +46,7 @@ A compliant orchestrator in any environment can read that contract and fulfill i
 
 **The artifact author** (the person writing the Dockerfile) declares:
 
-- Which inference capabilities and models the agent requires
+- Which inference capabilities the agent requires
 - Which MCP servers need OAuth credentials, and what auth methods are acceptable
 - What filesystem workspaces the agent needs and whether they must be writable
 - How the harness connects to the orchestrator and how that connection is authenticated
@@ -54,7 +54,7 @@ A compliant orchestrator in any environment can read that contract and fulfill i
 
 **The orchestrator** reads those declarations and decides how to satisfy them:
 
-- Which inference gateway to inject, after validating declared model availability
+- Which inference gateway to inject, after validating that available models satisfy declared requirements
 - Which registered OAuth client or IAT to use for each MCP server
 - Which volumes to mount and where
 - What token or certificate to issue the harness for its outbound stream
@@ -73,7 +73,7 @@ OAC-compliant container by including its agent name and spec version. See the
 ```dockerfile
 FROM node:25-alpine3.22
 
-LABEL org.openagentcontainers.version="v1alpha2"
+LABEL org.openagentcontainers.version="v1alpha3"
 LABEL org.openagentcontainers.name="pi-weather"
 ```
 

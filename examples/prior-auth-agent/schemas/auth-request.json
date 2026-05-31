@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AuthRequest",
+  "description": "A prior authorization request event delivered to the prior auth agent.",
+  "type": "object",
+  "required": ["request_id", "patient_id", "provider_id", "procedure_code", "diagnosis_codes", "created_at"],
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "type": "string",
+      "description": "Unique identifier for this authorization request."
+    },
+    "patient_id": {
+      "type": "string",
+      "description": "Patient identifier in the EHR system."
+    },
+    "provider_id": {
+      "type": "string",
+      "description": "Ordering provider NPI or internal identifier."
+    },
+    "payer_id": {
+      "type": "string",
+      "description": "Insurance payer identifier."
+    },
+    "procedure_code": {
+      "type": "string",
+      "description": "CPT or HCPCS procedure code being requested."
+    },
+    "diagnosis_codes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "ICD-10 diagnosis codes supporting medical necessity."
+    },
+    "clinical_summary": {
+      "type": "string",
+      "description": "Provider-supplied clinical summary and rationale."
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["routine", "urgent", "emergent"],
+      "description": "Clinical urgency of the request."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the request was submitted."
+    }
+  }
+}

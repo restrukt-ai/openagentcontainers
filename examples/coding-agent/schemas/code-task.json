@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CodeTask",
+  "description": "A code task event delivered to the coding agent.",
+  "type": "object",
+  "required": ["task_id", "type", "repository", "branch", "description", "created_at"],
+  "additionalProperties": false,
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "Unique identifier for this task."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["pr-review", "bug-fix", "feature", "refactor"],
+      "description": "The category of work to perform."
+    },
+    "repository": {
+      "type": "string",
+      "description": "Repository in org/repo format (e.g. acme/api-server)."
+    },
+    "branch": {
+      "type": "string",
+      "description": "Branch to work on. For pr-review tasks, the PR head branch."
+    },
+    "pr_number": {
+      "type": "integer",
+      "description": "Pull request number. Required for pr-review tasks."
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of what the agent should do."
+    },
+    "context_files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "File paths especially relevant to this task."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the task was created."
+    }
+  }
+}

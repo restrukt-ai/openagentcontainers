@@ -4,6 +4,21 @@ All notable changes to the OAC specification are documented here.
 
 ---
 
+## v1alpha3 — 2026-05-30
+
+### Changed
+
+- **Inference type model requirements replaced with capability and performance requirements** (§5.2).
+  The `inference.<type>.models` label (a space-separated list of required model IDs) is removed.
+  In its place, agents declare structured capability requirements — `context` (minimum context
+  window in tokens), `reasoning`, `tools`, and input/output modality flags (`input.vision`,
+  `input.audio`, `input.video`, `output.image`, `output.audio`, `output.video`) — and
+  open-vocabulary benchmark minimums (`bench.<id>`). The orchestrator selects from its available
+  models the best fit satisfying all declared requirements; deployment fails if no qualifying model
+  exists.
+
+---
+
 ## v1alpha2 — 2026-05-20
 
 ### Added

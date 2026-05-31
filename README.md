@@ -17,23 +17,25 @@ knowledge hardcoded into the infrastructure.
 ```dockerfile
 FROM node:25-alpine3.22
 
-LABEL org.openagentcontainers.version="v1alpha2"
+LABEL org.openagentcontainers.version="v1alpha3"
 LABEL org.openagentcontainers.name="my-agent"
 
-# inference
-LABEL org.openagentcontainers.inference.provider="openai"
-LABEL org.openagentcontainers.inference.model="gpt-4o"
+# inference: require tool calling and 128K context
+LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
+LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
+LABEL org.openagentcontainers.inference.chat-completions.tools="true"
+LABEL org.openagentcontainers.inference.chat-completions.context="128000"
 
 # orchestrator connection
-LABEL org.openagentcontainers.orchestrator.url="https://orchestrator.example.com"
-LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_URL"
+LABEL org.openagentcontainers.orchestrator.env="ORCHESTRATOR_ADDR"
+LABEL org.openagentcontainers.orchestrator.bearer.token.env="ORCHESTRATOR_TOKEN"
 ```
 
 All labels are namespaced under `org.openagentcontainers`. The six label groups:
 
 | Group           | Declares                                                        |
 | --------------- | --------------------------------------------------------------- |
-| `inference`     | Required inference provider and model                           |
+| `inference`     | Required inference endpoint and capability requirements         |
 | `mcp`           | MCP server URLs and credential negotiation (bearer, OAuth, DCR) |
 | `workspaces`    | Filesystem volume mounts the agent needs                        |
 | `orchestrator`  | Orchestrator endpoint and authentication (bearer or mTLS)       |

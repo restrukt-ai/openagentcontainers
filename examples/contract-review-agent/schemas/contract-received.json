@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ContractReceived",
+  "description": "A new contract requiring review, delivered to the contract review agent.",
+  "type": "object",
+  "required": ["contract_id", "contract_type", "counterparty", "document_path", "created_at"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_id": {
+      "type": "string",
+      "description": "Unique identifier for this contract in the CLM system."
+    },
+    "contract_type": {
+      "type": "string",
+      "enum": ["nda", "msa", "sow", "saas", "partnership", "employment", "other"],
+      "description": "Category of the contract."
+    },
+    "counterparty": {
+      "type": "string",
+      "description": "Name of the counterparty organization."
+    },
+    "counterparty_id": {
+      "type": "string",
+      "description": "Counterparty identifier in the CRM."
+    },
+    "document_path": {
+      "type": "string",
+      "description": "Path to the contract document within the /workspace/contracts mount."
+    },
+    "review_instructions": {
+      "type": "string",
+      "description": "Optional specific review instructions from the requesting team."
+    },
+    "review_deadline": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 deadline by which the review must be complete."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the contract was received."
+    }
+  }
+}

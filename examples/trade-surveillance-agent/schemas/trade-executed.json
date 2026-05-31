@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TradeExecuted",
+  "description": "A trade execution event delivered to the trade surveillance agent.",
+  "type": "object",
+  "required": ["trade_id", "trader_id", "security_id", "side", "quantity", "price", "venue", "executed_at"],
+  "additionalProperties": false,
+  "properties": {
+    "trade_id": {
+      "type": "string",
+      "description": "Unique identifier for this trade."
+    },
+    "trader_id": {
+      "type": "string",
+      "description": "Identifier of the trader who placed the order."
+    },
+    "desk_id": {
+      "type": "string",
+      "description": "Trading desk identifier."
+    },
+    "account_id": {
+      "type": "string",
+      "description": "Account the trade was executed against."
+    },
+    "security_id": {
+      "type": "string",
+      "description": "Security identifier (ISIN, ticker, or CUSIP)."
+    },
+    "security_type": {
+      "type": "string",
+      "enum": ["equity", "fixed-income", "derivative", "fx", "commodity", "other"],
+      "description": "Asset class of the traded security."
+    },
+    "side": {
+      "type": "string",
+      "enum": ["buy", "sell", "short-sell"],
+      "description": "Direction of the trade."
+    },
+    "quantity": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Number of units traded."
+    },
+    "price": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Execution price per unit."
+    },
+    "notional": {
+      "type": "number",
+      "description": "Total notional value of the trade (quantity × price)."
+    },
+    "venue": {
+      "type": "string",
+      "description": "Execution venue or exchange MIC code."
+    },
+    "order_id": {
+      "type": "string",
+      "description": "Parent order identifier."
+    },
+    "executed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of execution."
+    }
+  }
+}
