@@ -56,6 +56,9 @@ a CNCF proposal is made.
 12. [References](#12-references)
 
 - [Appendix A. Examples](#appendix-a-examples)
+  - [A.1 Minimal Conformant Agent Artifact](#a1-minimal-conformant-agent-artifact)
+  - [A.2 Agent with MCP Credentials, Workspace, and Event Subscription](#a2-agent-with-mcp-credentials-workspace-and-event-subscription)
+  - [A.3 Bench Label Examples](#a3-bench-label-examples)
 - [Appendix B. Implementation Notes](#appendix-b-implementation-notes)
 - [Acknowledgements](#acknowledgements)
 - [Revision History](#revision-history)
@@ -116,19 +119,19 @@ as shown here.
 
 ### 2.2 Definitions
 
-| Term                        | Definition                                                                                                                              |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Agent Artifact**          | An OCI image conforming to this specification that packages an AI agent and declares its runtime dependencies via labels                |
-| **Producer**                | An entity that creates and publishes a conformant Agent Artifact (typically a Dockerfile author or CI pipeline)                         |
-| **Consumer / Orchestrator** | An entity that ingests an Agent Artifact, reads its labels, and provisions the declared dependencies at deploy time                     |
-| **Harness**                 | The process inside the container that drives the agent's reasoning loop; must satisfy the runtime interface requirements in §4.3        |
-| **Label Namespace**         | The `org.openagentcontainers` prefix under which all OAC labels are declared                                                            |
-| **Dependency Declaration**  | One or more labels in the Label Namespace that describe a resource the agent requires at runtime                                        |
-| **Event Channel**           | A named application-level event stream the agent subscribes to, declared with a schema file embedded in the image                       |
-| **Schema File**             | A file embedded in the image at build time that describes the payload format for an event channel                                       |
-| **Registration**            | The one-time process by which an orchestrator inspects an image's labels and extracts cached schema files, prior to any container start |
+| Term                        | Definition                                                                                                                                                                                                              |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent Artifact**          | An OCI image conforming to this specification that packages an AI agent and declares its runtime dependencies via labels                                                                                                |
+| **Producer**                | An entity that creates and publishes a conformant Agent Artifact (typically a Dockerfile author or CI pipeline)                                                                                                         |
+| **Consumer / Orchestrator** | An entity that ingests an Agent Artifact, reads its labels, and provisions the declared dependencies at deploy time                                                                                                     |
+| **Harness**                 | The process inside the container that drives the agent's reasoning loop; must satisfy the runtime interface requirements in §4.3                                                                                        |
+| **Label Namespace**         | The `org.openagentcontainers` prefix under which all OAC labels are declared                                                                                                                                            |
+| **Dependency Declaration**  | One or more labels in the Label Namespace that describe a resource the agent requires at runtime                                                                                                                        |
+| **Event Channel**           | A named application-level event stream the agent subscribes to, declared with a schema file embedded in the image                                                                                                       |
+| **Schema File**             | A file embedded in the image at build time that describes the payload format for an event channel                                                                                                                       |
+| **Registration**            | The one-time process by which an orchestrator inspects an image's labels and extracts cached schema files, prior to any container start                                                                                 |
 | **Session**                 | A named lineage of events exchanged between the orchestrator and a harness instance, representing a single conversation or task thread. Each session is identified by a unique session ID assigned by the orchestrator. |
-| **OCI Image**               | A container image conforming to the [OCI Image Format Specification]                                                                    |
+| **OCI Image**               | A container image conforming to the [OCI Image Format Specification]                                                                                                                                                    |
 
 ---
 
@@ -330,18 +333,18 @@ Both connection labels MUST be declared together. An image MUST NOT declare one 
 
 Rather than declaring specific model IDs, the agent declares capability and performance requirements for each type. The orchestrator selects from its available models the best fit that satisfies all declared requirements. The harness MUST NOT use inference types that are not declared.
 
-| Label | Value | Description |
-| ----- | ----- | ----------- |
-| `inference.<type>.context` | positive integer | Minimum context window in tokens |
-| `inference.<type>.reasoning` | `"true"` | Model must support extended reasoning/thinking mode |
-| `inference.<type>.tools` | `"true"` | Model must support function/tool calling |
-| `inference.<type>.input.vision` | `"true"` | Model must accept image inputs |
-| `inference.<type>.input.audio` | `"true"` | Model must accept audio inputs |
-| `inference.<type>.input.video` | `"true"` | Model must accept video inputs |
-| `inference.<type>.output.image` | `"true"` | Model must support image generation output |
-| `inference.<type>.output.audio` | `"true"` | Model must support audio/speech output |
-| `inference.<type>.output.video` | `"true"` | Model must support video generation output |
-| `inference.<type>.bench.<id>` | decimal [0, 100] | Minimum score on the named benchmark, normalized to percentage |
+| Label                           | Value            | Description                                                    |
+| ------------------------------- | ---------------- | -------------------------------------------------------------- |
+| `inference.<type>.context`      | positive integer | Minimum context window in tokens                               |
+| `inference.<type>.reasoning`    | `"true"`         | Model must support extended reasoning/thinking mode            |
+| `inference.<type>.tools`        | `"true"`         | Model must support function/tool calling                       |
+| `inference.<type>.input.vision` | `"true"`         | Model must accept image inputs                                 |
+| `inference.<type>.input.audio`  | `"true"`         | Model must accept audio inputs                                 |
+| `inference.<type>.input.video`  | `"true"`         | Model must accept video inputs                                 |
+| `inference.<type>.output.image` | `"true"`         | Model must support image generation output                     |
+| `inference.<type>.output.audio` | `"true"`         | Model must support audio/speech output                         |
+| `inference.<type>.output.video` | `"true"`         | Model must support video generation output                     |
+| `inference.<type>.bench.<id>`   | decimal [0, 100] | Minimum score on the named benchmark, normalized to percentage |
 
 All labels are optional; absent labels impose no constraint on model selection. Boolean capability labels MUST have the value `"true"` or `"false"`; an absent label and a label set to `"false"` are semantically equivalent — both impose no constraint on model selection. The `bench.<id>` sub-namespace uses an open vocabulary: `<id>` is the benchmark identifier as defined by its publisher (e.g., `gpqa`, `humaneval`). Benchmark values MUST be a decimal number in the range [0, 100] representing percentage correct; the agent author is responsible for normalizing scores to this range. The orchestrator uses declared capability labels as hard gates and bench scores to further filter or rank the qualifying pool.
 
@@ -351,10 +354,16 @@ All labels are optional; absent labels impose no constraint on model selection. 
 LABEL org.openagentcontainers.inference.api_base.env="OPENAI_BASE_URL"
 LABEL org.openagentcontainers.inference.api_key.env="OPENAI_API_KEY"
 LABEL org.openagentcontainers.inference.chat-completions.context="128000"
+LABEL org.openagentcontainers.inference.chat-completions.reasoning="true"
+LABEL org.openagentcontainers.inference.chat-completions.tools="true"
 LABEL org.openagentcontainers.inference.chat-completions.input.vision="true"
 LABEL org.openagentcontainers.inference.chat-completions.bench.gpqa="55"
+LABEL org.openagentcontainers.inference.chat-completions.bench.hle="20"
+LABEL org.openagentcontainers.inference.chat-completions.bench.tau2="40"
 LABEL org.openagentcontainers.inference.embeddings.context="8191"
 ```
+
+Multiple `bench.*` labels on the same type are combined with AND semantics: the selected model must meet all declared minimums. Capability labels act as hard gates applied before bench scores are evaluated.
 
 ### 5.3 MCP Credentials
 
@@ -479,8 +488,8 @@ starts.
 Declares how the harness manages concurrent sessions. A session (§2.2) is a lineage of events
 exchanged between the orchestrator and a harness instance.
 
-| Label               | Required | Description                                                                                                                                 |
-| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Label               | Required | Description                                                                                                                                           |
+| ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `session.isolation` | No       | `"true"` if the harness handles multiple concurrent sessions in one process. Absent or `"false"` means one container per session. Default: `"false"`. |
 
 When `session.isolation` is absent or `"false"`, the orchestrator starts one container instance
@@ -803,16 +812,16 @@ enables orchestrators to read requirements without ever starting a container.
 
 ### 12.2 Informative References
 
-| Label                    | Reference                                                                                                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [ConnectRPC]             | Buf Technologies. "Connect Protocol." https://connectrpc.com                                                                                                        |
-| [K8s API Versioning]     | Kubernetes Project. "Kubernetes API versioning." https://kubernetes.io/docs/reference/using-api/#api-versioning                                                     |
+| Label                    | Reference                                                                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [ConnectRPC]             | Buf Technologies. "Connect Protocol." https://connectrpc.com                                                                                                          |
+| [K8s API Versioning]     | Kubernetes Project. "Kubernetes API versioning." https://kubernetes.io/docs/reference/using-api/#api-versioning                                                       |
 | [K8s API Conventions]    | Kubernetes SIG Architecture. "Kubernetes API Conventions." https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md |
-| [TOC #1740]              | Caldeira, V. et al. "Cloud Native and OCI Compliant Inner-Loop Tooling & Packaging for AI Engineers." CNCF TOC Issue #1740. https://github.com/cncf/toc/issues/1740 |
-| [TOC #1746]              | Caldeira, V. et al. "Cloud-Native Foundations for Distributed Agentic Systems." CNCF TOC Issue #1746. https://github.com/cncf/toc/issues/1746                       |
-| [TOC #1749]              | Halley, J. et al. "Cloud-Native Agentic Standards Checklist." CNCF TOC Issue #1749. https://github.com/cncf/toc/issues/1749                                         |
-| [OTel GenAI Agent Spans] | OpenTelemetry. "Semantic Conventions for GenAI Agent Spans." https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/                                 |
-| [SPIFFE]                 | SPIFFE Project. "Secure Production Identity Framework for Everyone." https://spiffe.io                                                                              |
+| [TOC #1740]              | Caldeira, V. et al. "Cloud Native and OCI Compliant Inner-Loop Tooling & Packaging for AI Engineers." CNCF TOC Issue #1740. https://github.com/cncf/toc/issues/1740   |
+| [TOC #1746]              | Caldeira, V. et al. "Cloud-Native Foundations for Distributed Agentic Systems." CNCF TOC Issue #1746. https://github.com/cncf/toc/issues/1746                         |
+| [TOC #1749]              | Halley, J. et al. "Cloud-Native Agentic Standards Checklist." CNCF TOC Issue #1749. https://github.com/cncf/toc/issues/1749                                           |
+| [OTel GenAI Agent Spans] | OpenTelemetry. "Semantic Conventions for GenAI Agent Spans." https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans/                                   |
+| [SPIFFE]                 | SPIFFE Project. "Secure Production Identity Framework for Everyone." https://spiffe.io                                                                                |
 
 ---
 
@@ -873,6 +882,69 @@ COPY agent.py /app/agent.py
 CMD ["python", "/app/agent.py"]
 ```
 
+### A.3 Bench Label Examples
+
+`bench.<id>` labels require a minimum score on a named benchmark, normalized to [0, 100]. The `<id>` values below use the field names from [Artificial Analysis](https://artificialanalysis.ai), which is the expected data source for orchestrators implementing model selection.
+
+**Composite indices** — already on a 0–100 scale, use as-is:
+
+| `<id>`              | Benchmark                          |
+| ------------------- | ---------------------------------- |
+| `intelligenceIndex` | AA Intelligence Index (composite)  |
+| `codingIndex`       | AA Coding Index (composite)        |
+| `agenticIndex`      | AA Agentic Index (composite)       |
+
+**Task benchmarks** — reported on a 0.0–1.0 scale; multiply by 100 to normalize:
+
+| `<id>`              | Benchmark                                           |
+| ------------------- | --------------------------------------------------- |
+| `gpqa`              | GPQA Diamond — graduate-level science questions     |
+| `hle`               | Humanity's Last Exam                                |
+| `mmmuPro`           | MMMU-Pro — multimodal understanding                 |
+| `omniscience`       | Omniscience — factual knowledge & non-hallucination |
+| `scicode`           | SciCode — scientific coding tasks                   |
+| `critpt`            | CritPT — critical-point reasoning                   |
+| `gdpvalNormalized`  | GDPVal — long-context dialogue                      |
+| `ifbench`           | IFBench — instruction following                     |
+| `lcr`               | LCR — long-context retrieval                        |
+| `tau2`              | TAU-bench v2 — tool use and agentic tasks           |
+| `apexAgents`        | APEX Agents                                         |
+| `itbenchSre`        | ITBench SRE — IT/site-reliability operations        |
+| `terminalbenchHard` | TerminalBench Hard — CLI tasks                      |
+
+> The agent author is responsible for normalizing scores to [0, 100]. For task benchmarks sourced from Artificial Analysis, multiply the raw value (0.0–1.0) by 100.
+
+**Agentic coding agent** — strong tool use and scientific reasoning, vision not required:
+
+```dockerfile
+LABEL org.openagentcontainers.inference.chat-completions.context="128000"
+LABEL org.openagentcontainers.inference.chat-completions.reasoning="true"
+LABEL org.openagentcontainers.inference.chat-completions.tools="true"
+LABEL org.openagentcontainers.inference.chat-completions.bench.gpqa="60"
+LABEL org.openagentcontainers.inference.chat-completions.bench.scicode="40"
+LABEL org.openagentcontainers.inference.chat-completions.bench.tau2="50"
+```
+
+**Multimodal document analysis agent** — vision required, broad factual reliability:
+
+```dockerfile
+LABEL org.openagentcontainers.inference.chat-completions.context="128000"
+LABEL org.openagentcontainers.inference.chat-completions.input.vision="true"
+LABEL org.openagentcontainers.inference.chat-completions.bench.mmmuPro="55"
+LABEL org.openagentcontainers.inference.chat-completions.bench.omniscience="60"
+LABEL org.openagentcontainers.inference.chat-completions.bench.ifbench="65"
+```
+
+**IT operations agent** — terminal and SRE task performance, long-context retrieval:
+
+```dockerfile
+LABEL org.openagentcontainers.inference.chat-completions.context="64000"
+LABEL org.openagentcontainers.inference.chat-completions.tools="true"
+LABEL org.openagentcontainers.inference.chat-completions.bench.itbenchSre="45"
+LABEL org.openagentcontainers.inference.chat-completions.bench.terminalbenchHard="50"
+LABEL org.openagentcontainers.inference.chat-completions.bench.lcr="70"
+```
+
 ---
 
 ## Appendix B. Implementation Notes
@@ -904,9 +976,9 @@ to the wrong group.
 
 ## Revision History
 
-| Version  | Date       | Summary                                                                                                                           |
-| -------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Version  | Date       | Summary                                                                                                                                                                                                                                             |
+| -------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | v1alpha3 | 2026-05-30 | Replace `inference.<type>.models` with capability and performance requirements: `context`, `reasoning`, `tools`, `input.*`, `output.*`, `bench.*` labels (§5.2); update orchestrator conformance (§6.2) and model validation error handling (§7.2). |
-| v1alpha2 | 2026-05-20 | Add session isolation: `session.isolation` label (§5.7), `session_id` field on stream messages, protobuf schema (§4.5), and workspace/session conflict error condition (§7.5). |
-| v1alpha2 | 2026-05-12 | Adopt Kubernetes-style maturity stages; unify spec document version with label version; document graduation path and §8 overhaul. |
-| v1alpha1 | 2026-05-04 | Initial draft; backported from docs/.                                                                                             |
+| v1alpha2 | 2026-05-20 | Add session isolation: `session.isolation` label (§5.7), `session_id` field on stream messages, protobuf schema (§4.5), and workspace/session conflict error condition (§7.5).                                                                      |
+| v1alpha2 | 2026-05-12 | Adopt Kubernetes-style maturity stages; unify spec document version with label version; document graduation path and §8 overhaul.                                                                                                                   |
+| v1alpha1 | 2026-05-04 | Initial draft; backported from docs/.                                                                                                                                                                                                               |
