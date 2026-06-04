@@ -3,12 +3,6 @@ version: "3"
 dotenv: ["spec-site/.env"]
 
 includes:
-  cli:
-    taskfile: ./cli/Taskfile.yml
-    dir: ./cli
-  pkg:
-    taskfile: ./pkg/Taskfile.yml
-    dir: ./pkg
   spec:
     taskfile: ./spec-site/Taskfile.yml
     dir: ./spec-site
@@ -19,20 +13,76 @@ tasks:
     cmds:
       - pkgsite .
 
+  build:
+    desc: Build the oac binary
+    cmds:
+      - go build -o cli/bin/oac ./cli/cmd/oac
+    sources:
+      - cli/cmd/oac/**/*.go
+      - cli/cmd/internal/**/*.go
+    generates:
+      - cli/bin/oac
+
   lint:
-    desc: Run all lints across cli and pkg
-    deps:
-      - cli:lint
-      - pkg:lint
+    desc: Run all lints
+    cmds:
+      - task: proto:lint
+      - task: lint:golangci-lint
+      - task: lint:govulncheck
+      - task: lint:nilaway
+      - task: lint:go-arch-lint
+
+  lint:go-arch-lint:
+    desc: Check internal package dependency boundaries
+    cmds:
+      - go-arch-lint check
+
+  lint:golangci-lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint config verify
+      - golangci-lint fmt ./...
+      - golangci-lint run --fix --max-same-issues 50 ./...
+      - git add -u .
+
+  lint:govulncheck:
+    desc: Check for dependency vulnerabilities
+    cmds:
+      - govulncheck ./...
+
+  lint:nilaway:
+    desc: Run nil safety analysis
+    cmds:
+      - nilaway -exclude-file-docstrings "Code generated" ./...
 
   test:
-    desc: Run all tests across cli and pkg
-    deps:
-      - cli:test
-      - pkg:test
+    desc: Run tests with race detector
+    cmds:
+      - go test -race ./...
 
   tidy:
-    desc: Tidy go.mod and go.sum across cli and pkg
-    deps:
-      - cli:tidy
-      - pkg:tidy
+    desc: Tidy go.mod and go.sum
+    cmds:
+      - go mod tidy
+
+  tidy:check:
+    desc: Verify go.mod and go.sum are tidy (no modifications)
+    cmds:
+      - go mod tidy
+      - git diff --exit-code -- go.mod go.sum
+
+  proto:gen:
+    desc: Regenerate proto-derived Go code
+    cmds:
+      - buf generate
+
+  proto:lint:
+    desc: Lint proto files with buf
+    cmds:
+      - buf lint
+
+  run:
+    desc: Run oac (pass args with -- e.g. task run -- discover localhost:5000)
+    deps: [build]
+    cmds:
+      - cli/bin/oac {{.CLI_ARGS}}

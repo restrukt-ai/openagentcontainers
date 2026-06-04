@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
 	"google.golang.org/adk/model/gemini"
@@ -21,7 +22,6 @@ import (
 	"google.golang.org/adk/tool/functiontool"
 	"google.golang.org/adk/tool/mcptoolset"
 	"google.golang.org/genai"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // TradeExecuted is the event payload for trade-executed events
@@ -45,11 +45,11 @@ type TradeExecuted struct {
 // --- Tools ---
 
 type WashTradingArgs struct {
-	TraderID   string  `json:"trader_id"   jsonschema:"description=Trader to check for wash trading"`
-	SecurityID string  `json:"security_id" jsonschema:"description=Security being screened"`
-	Side       string  `json:"side"        jsonschema:"description=Trade direction: buy or sell"`
+	TraderID   string  `json:"trader_id"        jsonschema:"description=Trader to check for wash trading"`
+	SecurityID string  `json:"security_id"      jsonschema:"description=Security being screened"`
+	Side       string  `json:"side"             jsonschema:"description=Trade direction: buy or sell"`
 	LookbackM  int     `json:"lookback_minutes" jsonschema:"description=Minutes of trade history to examine (default 60)"`
-	Notional   float64 `json:"notional"    jsonschema:"description=Notional value of the current trade"`
+	Notional   float64 `json:"notional"         jsonschema:"description=Notional value of the current trade"`
 }
 type WashTradingResult struct {
 	Flagged        bool     `json:"flagged"`
@@ -77,7 +77,13 @@ func checkWashTrading(_ tool.Context, args WashTradingArgs) (WashTradingResult, 
 	return WashTradingResult{
 		Flagged:        false,
 		MatchingTrades: nil,
-		Explanation:    fmt.Sprintf("No offsetting %s trades found for %s in %s within %d minutes.", oppositeSide, args.SecurityID, args.TraderID, lookback),
+		Explanation: fmt.Sprintf(
+			"No offsetting %s trades found for %s in %s within %d minutes.",
+			oppositeSide,
+			args.SecurityID,
+			args.TraderID,
+			lookback,
+		),
 	}, nil
 }
 
@@ -111,7 +117,11 @@ func checkPositionLimits(_ tool.Context, args PositionLimitArgs) (PositionLimitR
 	postTrade := currentPos + delta
 
 	breached := postTrade > simulatedLimit || postTrade < -simulatedLimit
-	explanation := fmt.Sprintf("Post-trade position %.0f vs limit ±%.0f.", postTrade, simulatedLimit)
+	explanation := fmt.Sprintf(
+		"Post-trade position %.0f vs limit ±%.0f.",
+		postTrade,
+		simulatedLimit,
+	)
 	if breached {
 		explanation = "BREACH: " + explanation
 	}
@@ -126,11 +136,11 @@ func checkPositionLimits(_ tool.Context, args PositionLimitArgs) (PositionLimitR
 }
 
 type FlagForReviewArgs struct {
-	TradeID     string `json:"trade_id"     jsonschema:"description=Trade identifier to flag"`
-	TraderID    string `json:"trader_id"    jsonschema:"description=Trader identifier"`
+	TradeID       string `json:"trade_id"       jsonschema:"description=Trade identifier to flag"`
+	TraderID      string `json:"trader_id"      jsonschema:"description=Trader identifier"`
 	ViolationType string `json:"violation_type" jsonschema:"description=Type of potential violation detected"`
-	Severity    string `json:"severity"     jsonschema:"description=low | medium | high | critical"`
-	Narrative   string `json:"narrative"    jsonschema:"description=Plain-language description of the concern"`
+	Severity      string `json:"severity"       jsonschema:"description=low | medium | high | critical"`
+	Narrative     string `json:"narrative"      jsonschema:"description=Plain-language description of the concern"`
 }
 
 func flagForReview(_ tool.Context, args FlagForReviewArgs) (map[string]any, error) {
@@ -181,7 +191,11 @@ func buildAgent(ctx context.Context) (agent.Agent, error) {
 	// Market data MCP server — bearer token injected by orchestrator (spec §5.3).
 	marketDataToolset, err := mcptoolset.New(mcptoolset.Config{
 		Transport: &mcp.CommandTransport{
-			Command: exec.Command("market-data-mcp-server", "--token", os.Getenv("MARKET_DATA_TOKEN")),
+			Command: exec.Command(
+				"market-data-mcp-server",
+				"--token",
+				os.Getenv("MARKET_DATA_TOKEN"),
+			),
 		},
 	})
 	if err != nil {
@@ -282,7 +296,13 @@ func main() {
 				return fmt.Errorf("agent error: %w", err)
 			}
 			if event.IsFinalResponse() {
-				log.Info("screening complete", "trade_id", trade.TradeID, "session_id", evt.SessionID)
+				log.Info(
+					"screening complete",
+					"trade_id",
+					trade.TradeID,
+					"session_id",
+					evt.SessionID,
+				)
 			}
 		}
 		return nil

@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
 	"google.golang.org/adk/model/gemini"
@@ -22,7 +23,6 @@ import (
 	"google.golang.org/adk/tool/functiontool"
 	"google.golang.org/adk/tool/mcptoolset"
 	"google.golang.org/genai"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 const (
@@ -66,8 +66,8 @@ func readContract(_ tool.Context, args ReadContractArgs) (ReadContractResult, er
 type RiskClause struct {
 	Section     string `json:"section"`
 	ClauseText  string `json:"clause_text"`
-	RiskType    string `json:"risk_type"`    // liability | ip | termination | payment | other
-	Severity    string `json:"severity"`     // low | medium | high
+	RiskType    string `json:"risk_type"` // liability | ip | termination | payment | other
+	Severity    string `json:"severity"`  // low | medium | high
 	Explanation string `json:"explanation"`
 }
 
@@ -115,7 +115,11 @@ func identifyRisks(_ tool.Context, args IdentifyRisksArgs) (IdentifyRisksResult,
 		Clauses:     clauses,
 		TotalHigh:   high,
 		TotalMedium: len(clauses) - high,
-		Summary:     fmt.Sprintf("%d high-risk and %d medium-risk clauses identified", high, len(clauses)-high),
+		Summary: fmt.Sprintf(
+			"%d high-risk and %d medium-risk clauses identified",
+			high,
+			len(clauses)-high,
+		),
 	}, nil
 }
 
@@ -126,11 +130,15 @@ type WriteRedlineArgs struct {
 }
 
 func writeRedline(_ tool.Context, args WriteRedlineArgs) (map[string]any, error) {
-	content := fmt.Sprintf("# Contract Review: %s\n\n## Executive Summary\n\n%s\n\n## Redline\n\n%s",
-		args.ContractID, args.Summary, args.RedlineText)
+	content := fmt.Sprintf(
+		"# Contract Review: %s\n\n## Executive Summary\n\n%s\n\n## Redline\n\n%s",
+		args.ContractID,
+		args.Summary,
+		args.RedlineText,
+	)
 
 	outPath := filepath.Join(redlinesPath, args.ContractID+"-redline.md")
-	if err := os.WriteFile(outPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(outPath, []byte(content), 0o644); err != nil {
 		return nil, fmt.Errorf("writing redline: %w", err)
 	}
 	return map[string]any{"written": outPath}, nil

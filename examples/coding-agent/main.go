@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
 	"google.golang.org/adk/model/gemini"
@@ -21,7 +22,6 @@ import (
 	"google.golang.org/adk/tool/functiontool"
 	"google.golang.org/adk/tool/mcptoolset"
 	"google.golang.org/genai"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 const repoPath = "/workspace/repo"
@@ -61,7 +61,7 @@ type WriteFileArgs struct {
 }
 
 func writeFile(_ tool.Context, args WriteFileArgs) (map[string]any, error) {
-	if err := os.WriteFile(repoPath+"/"+args.Path, []byte(args.Content), 0644); err != nil {
+	if err := os.WriteFile(repoPath+"/"+args.Path, []byte(args.Content), 0o644); err != nil {
 		return nil, fmt.Errorf("writing %s: %w", args.Path, err)
 	}
 	return map[string]any{"written": args.Path}, nil

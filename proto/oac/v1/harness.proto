@@ -1,0 +1,65 @@
+syntax = "proto3";
+package oac.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/restrukt-ai/openagentcontainers/pkg/api/oac/v1;oacv1";
+
+// HarnessService is the bidirectional stream between the Conductor (server)
+// and agent harnesses (clients). Stream open equals session registration;
+// the harness authenticates via bearer token or mTLS cert in request metadata.
+service HarnessService {
+  rpc RunSession(stream RunSessionRequest) returns (stream RunSessionResponse);
+}
+
+// RunSessionRequest is the harness → orchestrator envelope.
+// Exactly one frame field is set per message.
+message RunSessionRequest {
+  oneof frame {
+    Heartbeat heartbeat = 1;
+    Idle      idle      = 2;
+    Complete  complete  = 3;
+  }
+}
+
+// RunSessionResponse is the orchestrator → harness envelope.
+// Exactly one frame field is set per message.
+message RunSessionResponse {
+  oneof frame {
+    SessionContext session_context = 1;
+    Event          event           = 2;
+    SuspendWarning suspend_warning = 3;
+  }
+}
+
+// Heartbeat is sent periodically by the harness to keep the session alive.
+// The orchestrator resets the dormancy inactivity timer on receipt.
+message Heartbeat {
+  google.protobuf.Timestamp timestamp = 1;
+}
+
+// Idle signals that the harness has no pending work and consents to suspension.
+// Receipt triggers an ACTIVE → DORMANT lifecycle transition.
+message Idle {}
+
+// Complete signals that the harness has finished all work for this session.
+// Receipt triggers an ACTIVE → COMPLETE lifecycle transition. Terminal.
+message Complete {}
+
+// SessionContext is sent by the orchestrator once on stream open.
+// Contains the canonical SGP message array assembled by the Session Graph Store.
+// TODO: add SGP message array fields once SGP library integration is complete.
+message SessionContext {}
+
+// Event carries a single inbound event for delivery to the harness.
+message Event {
+  string event_id     = 1;
+  string channel_name = 2;
+  bytes  payload      = 3;
+}
+
+// SuspendWarning is an optional pre-dormancy notice sent before an
+// orchestrator-side inactivity timeout fires.
+message SuspendWarning {
+  google.protobuf.Timestamp suspension_at = 1;
+}

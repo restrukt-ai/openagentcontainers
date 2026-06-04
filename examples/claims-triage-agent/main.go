@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
 	"google.golang.org/adk/model/gemini"
@@ -21,7 +22,6 @@ import (
 	"google.golang.org/adk/tool/functiontool"
 	"google.golang.org/adk/tool/mcptoolset"
 	"google.golang.org/genai"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // InsuranceClaim is the event payload for insurance-claim events (schemas/insurance-claim.json).
@@ -46,10 +46,10 @@ type FraudCheckArgs struct {
 	IncidentType  string  `json:"incident_type"  jsonschema:"description=Category of the reported incident"`
 }
 type FraudCheckResult struct {
-	RiskScore    float64  `json:"risk_score"`    // 0.0–1.0
-	RiskLevel    string   `json:"risk_level"`    // low | medium | high
-	Indicators   []string `json:"indicators"`    // specific risk signals found
-	PriorClaims  int      `json:"prior_claims"`  // count of prior claims by this claimant
+	RiskScore   float64  `json:"risk_score"`   // 0.0–1.0
+	RiskLevel   string   `json:"risk_level"`   // low | medium | high
+	Indicators  []string `json:"indicators"`   // specific risk signals found
+	PriorClaims int      `json:"prior_claims"` // count of prior claims by this claimant
 }
 
 // checkFraudRisk scores the claim against the fraud database. In production
@@ -91,9 +91,9 @@ func checkFraudRisk(_ tool.Context, args FraudCheckArgs) (FraudCheckResult, erro
 }
 
 type ClassifyArgs struct {
-	IncidentType    string  `json:"incident_type"    jsonschema:"description=Incident type from the claim event"`
-	ClaimedAmount   float64 `json:"claimed_amount"   jsonschema:"description=Dollar amount being claimed"`
-	FraudRiskLevel  string  `json:"fraud_risk_level" jsonschema:"description=Fraud risk level from checkFraudRisk"`
+	IncidentType   string  `json:"incident_type"    jsonschema:"description=Incident type from the claim event"`
+	ClaimedAmount  float64 `json:"claimed_amount"   jsonschema:"description=Dollar amount being claimed"`
+	FraudRiskLevel string  `json:"fraud_risk_level" jsonschema:"description=Fraud risk level from checkFraudRisk"`
 }
 type ClassifyResult struct {
 	AdjusterType string `json:"adjuster_type"` // field | desk | special-investigations

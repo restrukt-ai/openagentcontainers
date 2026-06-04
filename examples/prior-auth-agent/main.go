@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
 	"google.golang.org/adk/model/gemini"
@@ -23,7 +24,6 @@ import (
 	"google.golang.org/adk/tool/functiontool"
 	"google.golang.org/adk/tool/mcptoolset"
 	"google.golang.org/genai"
-	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 const (
@@ -63,16 +63,20 @@ func readGuideline(_ tool.Context, args ReadGuidelineArgs) (ReadGuidelineResult,
 		return ReadGuidelineResult{Found: false}, nil
 	}
 	if err != nil {
-		return ReadGuidelineResult{}, fmt.Errorf("reading guideline for %s: %w", args.ProcedureCode, err)
+		return ReadGuidelineResult{}, fmt.Errorf(
+			"reading guideline for %s: %w",
+			args.ProcedureCode,
+			err,
+		)
 	}
 	return ReadGuidelineResult{Found: true, Guideline: string(b)}, nil
 }
 
 type WriteDecisionArgs struct {
-	RequestID  string `json:"request_id"  jsonschema:"description=Authorization request ID"`
-	Decision   string `json:"decision"    jsonschema:"description=approved or denied"`
-	Rationale  string `json:"rationale"   jsonschema:"description=Clinical rationale for the decision"`
-	Conditions string `json:"conditions"  jsonschema:"description=Any approval conditions or denial appeal instructions"`
+	RequestID  string `json:"request_id" jsonschema:"description=Authorization request ID"`
+	Decision   string `json:"decision"   jsonschema:"description=approved or denied"`
+	Rationale  string `json:"rationale"  jsonschema:"description=Clinical rationale for the decision"`
+	Conditions string `json:"conditions" jsonschema:"description=Any approval conditions or denial appeal instructions"`
 }
 
 // writeDecision persists the authorization decision to the mutable decisions workspace.
@@ -91,7 +95,7 @@ func writeDecision(_ tool.Context, args WriteDecisionArgs) (map[string]any, erro
 	)
 
 	outPath := filepath.Join(decisionsPath, args.RequestID+".md")
-	if err := os.WriteFile(outPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(outPath, []byte(content), 0o644); err != nil {
 		return nil, fmt.Errorf("writing decision: %w", err)
 	}
 	return map[string]any{"written": outPath, "decision": args.Decision}, nil
@@ -136,7 +140,11 @@ func buildAgent(ctx context.Context) (agent.Agent, error) {
 	// Payer rules MCP server — bearer token injected by orchestrator (spec §5.3).
 	payerToolset, err := mcptoolset.New(mcptoolset.Config{
 		Transport: &mcp.CommandTransport{
-			Command: exec.Command("payer-rules-mcp-server", "--token", os.Getenv("PAYER_RULES_TOKEN")),
+			Command: exec.Command(
+				"payer-rules-mcp-server",
+				"--token",
+				os.Getenv("PAYER_RULES_TOKEN"),
+			),
 		},
 	})
 	if err != nil {
