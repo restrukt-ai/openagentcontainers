@@ -19,7 +19,14 @@ message RunSessionRequest {
     Heartbeat heartbeat = 1;
     Idle      idle      = 2;
     Complete  complete  = 3;
+    SGPEvent  sgp_event = 4;
   }
+}
+
+// SGPEvent carries a JSON-serialized sgp.Event emitted by the harness.
+// The orchestrator deserializes and appends it to the session graph store.
+message SGPEvent {
+  bytes payload = 1;
 }
 
 // RunSessionResponse is the orchestrator → harness envelope.
@@ -48,8 +55,15 @@ message Complete {}
 
 // SessionContext is sent by the orchestrator once on stream open.
 // Contains the canonical SGP message array assembled by the Session Graph Store.
-// TODO: add SGP message array fields once SGP library integration is complete.
-message SessionContext {}
+message SessionContext {
+  // history_json is a JSON-serialized []sgp.Message (root→head linear path).
+  // Empty for brand-new sessions.
+  bytes history_json   = 1;
+
+  // needs_response is true when the head node is a user or tool message,
+  // indicating that the agent has not yet produced a reply.
+  bool  needs_response = 2;
+}
 
 // Event carries a single inbound event for delivery to the harness.
 message Event {

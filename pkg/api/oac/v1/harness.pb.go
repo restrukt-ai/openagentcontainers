@@ -31,6 +31,7 @@ type RunSessionRequest struct {
 	//	*RunSessionRequest_Heartbeat
 	//	*RunSessionRequest_Idle
 	//	*RunSessionRequest_Complete
+	//	*RunSessionRequest_SgpEvent
 	Frame         isRunSessionRequest_Frame `protobuf_oneof:"frame"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -100,6 +101,15 @@ func (x *RunSessionRequest) GetComplete() *Complete {
 	return nil
 }
 
+func (x *RunSessionRequest) GetSgpEvent() *SGPEvent {
+	if x != nil {
+		if x, ok := x.Frame.(*RunSessionRequest_SgpEvent); ok {
+			return x.SgpEvent
+		}
+	}
+	return nil
+}
+
 type isRunSessionRequest_Frame interface {
 	isRunSessionRequest_Frame()
 }
@@ -116,11 +126,63 @@ type RunSessionRequest_Complete struct {
 	Complete *Complete `protobuf:"bytes,3,opt,name=complete,proto3,oneof"`
 }
 
+type RunSessionRequest_SgpEvent struct {
+	SgpEvent *SGPEvent `protobuf:"bytes,4,opt,name=sgp_event,json=sgpEvent,proto3,oneof"`
+}
+
 func (*RunSessionRequest_Heartbeat) isRunSessionRequest_Frame() {}
 
 func (*RunSessionRequest_Idle) isRunSessionRequest_Frame() {}
 
 func (*RunSessionRequest_Complete) isRunSessionRequest_Frame() {}
+
+func (*RunSessionRequest_SgpEvent) isRunSessionRequest_Frame() {}
+
+// SGPEvent carries a JSON-serialized sgp.Event emitted by the harness.
+// The orchestrator deserializes and appends it to the session graph store.
+type SGPEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Payload       []byte                 `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SGPEvent) Reset() {
+	*x = SGPEvent{}
+	mi := &file_oac_v1_harness_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SGPEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SGPEvent) ProtoMessage() {}
+
+func (x *SGPEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_oac_v1_harness_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SGPEvent.ProtoReflect.Descriptor instead.
+func (*SGPEvent) Descriptor() ([]byte, []int) {
+	return file_oac_v1_harness_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *SGPEvent) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
 
 // RunSessionResponse is the orchestrator → harness envelope.
 // Exactly one frame field is set per message.
@@ -138,7 +200,7 @@ type RunSessionResponse struct {
 
 func (x *RunSessionResponse) Reset() {
 	*x = RunSessionResponse{}
-	mi := &file_oac_v1_harness_proto_msgTypes[1]
+	mi := &file_oac_v1_harness_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -150,7 +212,7 @@ func (x *RunSessionResponse) String() string {
 func (*RunSessionResponse) ProtoMessage() {}
 
 func (x *RunSessionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_oac_v1_harness_proto_msgTypes[1]
+	mi := &file_oac_v1_harness_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -163,7 +225,7 @@ func (x *RunSessionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunSessionResponse.ProtoReflect.Descriptor instead.
 func (*RunSessionResponse) Descriptor() ([]byte, []int) {
-	return file_oac_v1_harness_proto_rawDescGZIP(), []int{1}
+	return file_oac_v1_harness_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RunSessionResponse) GetFrame() isRunSessionResponse_Frame {
@@ -233,7 +295,7 @@ type Heartbeat struct {
 
 func (x *Heartbeat) Reset() {
 	*x = Heartbeat{}
-	mi := &file_oac_v1_harness_proto_msgTypes[2]
+	mi := &file_oac_v1_harness_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -245,7 +307,7 @@ func (x *Heartbeat) String() string {
 func (*Heartbeat) ProtoMessage() {}
 
 func (x *Heartbeat) ProtoReflect() protoreflect.Message {
-	mi := &file_oac_v1_harness_proto_msgTypes[2]
+	mi := &file_oac_v1_harness_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -258,7 +320,7 @@ func (x *Heartbeat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
 func (*Heartbeat) Descriptor() ([]byte, []int) {
-	return file_oac_v1_harness_proto_rawDescGZIP(), []int{2}
+	return file_oac_v1_harness_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Heartbeat) GetTimestamp() *timestamppb.Timestamp {
@@ -278,7 +340,7 @@ type Idle struct {
 
 func (x *Idle) Reset() {
 	*x = Idle{}
-	mi := &file_oac_v1_harness_proto_msgTypes[3]
+	mi := &file_oac_v1_harness_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -290,7 +352,7 @@ func (x *Idle) String() string {
 func (*Idle) ProtoMessage() {}
 
 func (x *Idle) ProtoReflect() protoreflect.Message {
-	mi := &file_oac_v1_harness_proto_msgTypes[3]
+	mi := &file_oac_v1_harness_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -303,7 +365,7 @@ func (x *Idle) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Idle.ProtoReflect.Descriptor instead.
 func (*Idle) Descriptor() ([]byte, []int) {
-	return file_oac_v1_harness_proto_rawDescGZIP(), []int{3}
+	return file_oac_v1_harness_proto_rawDescGZIP(), []int{4}
 }
 
 // Complete signals that the harness has finished all work for this session.
@@ -316,7 +378,7 @@ type Complete struct {
 
 func (x *Complete) Reset() {
 	*x = Complete{}
-	mi := &file_oac_v1_harness_proto_msgTypes[4]
+	mi := &file_oac_v1_harness_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -328,7 +390,7 @@ func (x *Complete) String() string {
 func (*Complete) ProtoMessage() {}
 
 func (x *Complete) ProtoReflect() protoreflect.Message {
-	mi := &file_oac_v1_harness_proto_msgTypes[4]
+	mi := &file_oac_v1_harness_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -341,21 +403,26 @@ func (x *Complete) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Complete.ProtoReflect.Descriptor instead.
 func (*Complete) Descriptor() ([]byte, []int) {
-	return file_oac_v1_harness_proto_rawDescGZIP(), []int{4}
+	return file_oac_v1_harness_proto_rawDescGZIP(), []int{5}
 }
 
 // SessionContext is sent by the orchestrator once on stream open.
 // Contains the canonical SGP message array assembled by the Session Graph Store.
-// TODO: add SGP message array fields once SGP library integration is complete.
 type SessionContext struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// history_json is a JSON-serialized []sgp.Message (root→head linear path).
+	// Empty for brand-new sessions.
+	HistoryJson []byte `protobuf:"bytes,1,opt,name=history_json,json=historyJson,proto3" json:"history_json,omitempty"`
+	// needs_response is true when the head node is a user or tool message,
+	// indicating that the agent has not yet produced a reply.
+	NeedsResponse bool `protobuf:"varint,2,opt,name=needs_response,json=needsResponse,proto3" json:"needs_response,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SessionContext) Reset() {
 	*x = SessionContext{}
-	mi := &file_oac_v1_harness_proto_msgTypes[5]
+	mi := &file_oac_v1_harness_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -367,7 +434,7 @@ func (x *SessionContext) String() string {
 func (*SessionContext) ProtoMessage() {}
 
 func (x *SessionContext) ProtoReflect() protoreflect.Message {
-	mi := &file_oac_v1_harness_proto_msgTypes[5]
+	mi := &file_oac_v1_harness_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -380,7 +447,21 @@ func (x *SessionContext) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SessionContext.ProtoReflect.Descriptor instead.
 func (*SessionContext) Descriptor() ([]byte, []int) {
-	return file_oac_v1_harness_proto_rawDescGZIP(), []int{5}
+	return file_oac_v1_harness_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SessionContext) GetHistoryJson() []byte {
+	if x != nil {
+		return x.HistoryJson
+	}
+	return nil
+}
+
+func (x *SessionContext) GetNeedsResponse() bool {
+	if x != nil {
+		return x.NeedsResponse
+	}
+	return false
 }
 
 // Event carries a single inbound event for delivery to the harness.
@@ -395,7 +476,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_oac_v1_harness_proto_msgTypes[6]
+	mi := &file_oac_v1_harness_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -407,7 +488,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_oac_v1_harness_proto_msgTypes[6]
+	mi := &file_oac_v1_harness_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -420,7 +501,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_oac_v1_harness_proto_rawDescGZIP(), []int{6}
+	return file_oac_v1_harness_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Event) GetEventId() string {
@@ -455,7 +536,7 @@ type SuspendWarning struct {
 
 func (x *SuspendWarning) Reset() {
 	*x = SuspendWarning{}
-	mi := &file_oac_v1_harness_proto_msgTypes[7]
+	mi := &file_oac_v1_harness_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -467,7 +548,7 @@ func (x *SuspendWarning) String() string {
 func (*SuspendWarning) ProtoMessage() {}
 
 func (x *SuspendWarning) ProtoReflect() protoreflect.Message {
-	mi := &file_oac_v1_harness_proto_msgTypes[7]
+	mi := &file_oac_v1_harness_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -480,7 +561,7 @@ func (x *SuspendWarning) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SuspendWarning.ProtoReflect.Descriptor instead.
 func (*SuspendWarning) Descriptor() ([]byte, []int) {
-	return file_oac_v1_harness_proto_rawDescGZIP(), []int{7}
+	return file_oac_v1_harness_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SuspendWarning) GetSuspensionAt() *timestamppb.Timestamp {
@@ -494,12 +575,15 @@ var File_oac_v1_harness_proto protoreflect.FileDescriptor
 
 const file_oac_v1_harness_proto_rawDesc = "" +
 	"\n" +
-	"\x14oac/v1/harness.proto\x12\x06oac.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa3\x01\n" +
+	"\x14oac/v1/harness.proto\x12\x06oac.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd4\x01\n" +
 	"\x11RunSessionRequest\x121\n" +
 	"\theartbeat\x18\x01 \x01(\v2\x11.oac.v1.HeartbeatH\x00R\theartbeat\x12\"\n" +
 	"\x04idle\x18\x02 \x01(\v2\f.oac.v1.IdleH\x00R\x04idle\x12.\n" +
-	"\bcomplete\x18\x03 \x01(\v2\x10.oac.v1.CompleteH\x00R\bcompleteB\a\n" +
-	"\x05frame\"\xca\x01\n" +
+	"\bcomplete\x18\x03 \x01(\v2\x10.oac.v1.CompleteH\x00R\bcomplete\x12/\n" +
+	"\tsgp_event\x18\x04 \x01(\v2\x10.oac.v1.SGPEventH\x00R\bsgpEventB\a\n" +
+	"\x05frame\"$\n" +
+	"\bSGPEvent\x12\x18\n" +
+	"\apayload\x18\x01 \x01(\fR\apayload\"\xca\x01\n" +
 	"\x12RunSessionResponse\x12A\n" +
 	"\x0fsession_context\x18\x01 \x01(\v2\x16.oac.v1.SessionContextH\x00R\x0esessionContext\x12%\n" +
 	"\x05event\x18\x02 \x01(\v2\r.oac.v1.EventH\x00R\x05event\x12A\n" +
@@ -509,8 +593,10 @@ const file_oac_v1_harness_proto_rawDesc = "" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\x06\n" +
 	"\x04Idle\"\n" +
 	"\n" +
-	"\bComplete\"\x10\n" +
-	"\x0eSessionContext\"_\n" +
+	"\bComplete\"Z\n" +
+	"\x0eSessionContext\x12!\n" +
+	"\fhistory_json\x18\x01 \x01(\fR\vhistoryJson\x12%\n" +
+	"\x0eneeds_response\x18\x02 \x01(\bR\rneedsResponse\"_\n" +
 	"\x05Event\x12\x19\n" +
 	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12!\n" +
 	"\fchannel_name\x18\x02 \x01(\tR\vchannelName\x12\x18\n" +
@@ -533,34 +619,36 @@ func file_oac_v1_harness_proto_rawDescGZIP() []byte {
 	return file_oac_v1_harness_proto_rawDescData
 }
 
-var file_oac_v1_harness_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_oac_v1_harness_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_oac_v1_harness_proto_goTypes = []any{
 	(*RunSessionRequest)(nil),     // 0: oac.v1.RunSessionRequest
-	(*RunSessionResponse)(nil),    // 1: oac.v1.RunSessionResponse
-	(*Heartbeat)(nil),             // 2: oac.v1.Heartbeat
-	(*Idle)(nil),                  // 3: oac.v1.Idle
-	(*Complete)(nil),              // 4: oac.v1.Complete
-	(*SessionContext)(nil),        // 5: oac.v1.SessionContext
-	(*Event)(nil),                 // 6: oac.v1.Event
-	(*SuspendWarning)(nil),        // 7: oac.v1.SuspendWarning
-	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
+	(*SGPEvent)(nil),              // 1: oac.v1.SGPEvent
+	(*RunSessionResponse)(nil),    // 2: oac.v1.RunSessionResponse
+	(*Heartbeat)(nil),             // 3: oac.v1.Heartbeat
+	(*Idle)(nil),                  // 4: oac.v1.Idle
+	(*Complete)(nil),              // 5: oac.v1.Complete
+	(*SessionContext)(nil),        // 6: oac.v1.SessionContext
+	(*Event)(nil),                 // 7: oac.v1.Event
+	(*SuspendWarning)(nil),        // 8: oac.v1.SuspendWarning
+	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_oac_v1_harness_proto_depIdxs = []int32{
-	2, // 0: oac.v1.RunSessionRequest.heartbeat:type_name -> oac.v1.Heartbeat
-	3, // 1: oac.v1.RunSessionRequest.idle:type_name -> oac.v1.Idle
-	4, // 2: oac.v1.RunSessionRequest.complete:type_name -> oac.v1.Complete
-	5, // 3: oac.v1.RunSessionResponse.session_context:type_name -> oac.v1.SessionContext
-	6, // 4: oac.v1.RunSessionResponse.event:type_name -> oac.v1.Event
-	7, // 5: oac.v1.RunSessionResponse.suspend_warning:type_name -> oac.v1.SuspendWarning
-	8, // 6: oac.v1.Heartbeat.timestamp:type_name -> google.protobuf.Timestamp
-	8, // 7: oac.v1.SuspendWarning.suspension_at:type_name -> google.protobuf.Timestamp
-	0, // 8: oac.v1.HarnessService.RunSession:input_type -> oac.v1.RunSessionRequest
-	1, // 9: oac.v1.HarnessService.RunSession:output_type -> oac.v1.RunSessionResponse
-	9, // [9:10] is the sub-list for method output_type
-	8, // [8:9] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	3,  // 0: oac.v1.RunSessionRequest.heartbeat:type_name -> oac.v1.Heartbeat
+	4,  // 1: oac.v1.RunSessionRequest.idle:type_name -> oac.v1.Idle
+	5,  // 2: oac.v1.RunSessionRequest.complete:type_name -> oac.v1.Complete
+	1,  // 3: oac.v1.RunSessionRequest.sgp_event:type_name -> oac.v1.SGPEvent
+	6,  // 4: oac.v1.RunSessionResponse.session_context:type_name -> oac.v1.SessionContext
+	7,  // 5: oac.v1.RunSessionResponse.event:type_name -> oac.v1.Event
+	8,  // 6: oac.v1.RunSessionResponse.suspend_warning:type_name -> oac.v1.SuspendWarning
+	9,  // 7: oac.v1.Heartbeat.timestamp:type_name -> google.protobuf.Timestamp
+	9,  // 8: oac.v1.SuspendWarning.suspension_at:type_name -> google.protobuf.Timestamp
+	0,  // 9: oac.v1.HarnessService.RunSession:input_type -> oac.v1.RunSessionRequest
+	2,  // 10: oac.v1.HarnessService.RunSession:output_type -> oac.v1.RunSessionResponse
+	10, // [10:11] is the sub-list for method output_type
+	9,  // [9:10] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_oac_v1_harness_proto_init() }
@@ -572,8 +660,9 @@ func file_oac_v1_harness_proto_init() {
 		(*RunSessionRequest_Heartbeat)(nil),
 		(*RunSessionRequest_Idle)(nil),
 		(*RunSessionRequest_Complete)(nil),
+		(*RunSessionRequest_SgpEvent)(nil),
 	}
-	file_oac_v1_harness_proto_msgTypes[1].OneofWrappers = []any{
+	file_oac_v1_harness_proto_msgTypes[2].OneofWrappers = []any{
 		(*RunSessionResponse_SessionContext)(nil),
 		(*RunSessionResponse_Event)(nil),
 		(*RunSessionResponse_SuspendWarning)(nil),
@@ -584,7 +673,7 @@ func file_oac_v1_harness_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_oac_v1_harness_proto_rawDesc), len(file_oac_v1_harness_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
